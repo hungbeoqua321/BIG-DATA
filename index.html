@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero-Shot Depth-Aware Image Editing</title>
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* RESET & BASE */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-snap-type: y mandatory;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f0f2f5;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .logo span { color: #3498db; }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        nav a:hover, nav a.active { color: #3498db; }
+        nav a::after {
+            content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px;
+            background: #3498db; transition: width 0.3s;
+        }
+        nav a:hover::after { width: 100%; }
+
+        /* Progress Bar */
+        .progress-bar {
+            position: fixed; top: 70px; left: 0; height: 3px;
+            background: linear-gradient(90deg, #3498db, #8e44ad);
+            z-index: 999; width: 0%; transition: width 0.2s;
+        }
+
+        /* ===== MAIN LAYOUT ===== */
+        main { margin-top: 80px; }
+
+        section {
+            padding: 4rem 2rem; /* Tăng padding để thoáng hơn */
+            min-height: auto; /* Cho phép chiều cao tự động theo nội dung */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid #e1e1e1;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .section-content { max-width: 1000px; width: 100%; }
+
+        h2 {
+            font-size: 2.5rem; color: #2c3e50; text-align: center; margin-bottom: 3rem;
+            position: relative;
+        }
+        h2::after {
+            content: ''; display: block; width: 60px; height: 4px;
+            background: #3498db; margin: 1rem auto 0; border-radius: 2px;
+        }
+
+        /* ===== BOX STYLES ===== */
+        .problem-box, .solution-box {
+            padding: 2rem; border-radius: 12px; margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .problem-box { background: #fff5f5; border-left: 5px solid #e74c3c; }
+        .solution-box { background: #f0f9ff; border-left: 5px solid #3498db; }
+        
+        .problem-box h3 { color: #c0392b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+        .solution-box h3 { color: #2980b9; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+
+        /* ===== GRIDS ===== */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+
+        /* ===== CAROUSEL / CARDS ===== */
+        .card-container {
+            display: flex; gap: 1.5rem; overflow-x: auto; padding: 1rem 0 2rem;
+            scroll-snap-type: x mandatory;
+        }
+        .info-card {
+            flex: 0 0 300px;
+            background: white; padding: 2rem; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            scroll-snap-align: center;
+            border-top: 4px solid #3498db;
+        }
+        .info-card h4 { font-size: 1.2rem; margin-bottom: 1rem; color: #2c3e50; }
+
+        /* ===== DIAGRAM BOX ===== */
+        .diagram-box {
+            background: white; padding: 2rem; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin: 2rem 0;
+            overflow: hidden; border: 1px solid #eee;
+        }
+        .mermaid { display: flex; justify-content: center; margin-top: 1rem; }
+
+        /* ===== TOC HERO ===== */
+        #toc {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white; padding: 6rem 2rem; text-align: center;
+        }
+        #toc h2 { color: white; margin-bottom: 1rem; }
+        #toc h2::after { background: white; }
+        .toc-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem; margin-top: 3rem;
+        }
+        .toc-item {
+            background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px;
+            backdrop-filter: blur(5px); transition: transform 0.3s, background 0.3s;
+            cursor: pointer; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .toc-item:hover { transform: translateY(-5px); background: rgba(255,255,255,0.2); }
+        .toc-item strong { display: block; font-size: 1.2rem; margin-bottom: 0.5rem; }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background: #2c3e50; color: white; text-align: center; padding: 3rem;
+            margin-top: auto;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            h2 { font-size: 2rem; }
+            nav { display: none; } /* Mobile menu simplified */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <div class="logo">Zero-Shot <span>Editing</span></div>
+            <nav>
+                <ul>
+                    <li><a href="#paper">Vấn đề</a></li>
+                    <li><a href="#model">Mô hình</a></li>
+                    <li><a href="#arch">Kiến trúc</a></li>
+                    <li><a href="#bigdata">Big Data</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="progress-bar"></div>
+
+    <main>
+        <!-- HERO / TOC -->
+        <section id="toc">
+            <div class="section-content">
+                <h2>BÁO CÁO KỸ THUẬT</h2>
+                <p style="font-size: 1.2rem; opacity: 0.9;">Zero-Shot Depth-Aware Image Editing with Diffusion Models</p>
+                
+                <div class="toc-grid">
+                    <a href="#paper" class="toc-item">
+                        <strong>📄 Vấn Đề</strong>
+                        <span>Hạn chế của mô hình hiện tại & Giải pháp Zero-shot</span>
+                    </a>
+                    <a href="#model" class="toc-item">
+                        <strong>🤖 Mô Hình</strong>
+                        <span>Stable Diffusion + Depth + Identity</span>
+                    </a>
+                    <a href="#arch" class="toc-item">
+                        <strong>🏗️ Kiến Trúc</strong>
+                        <span>DeGLaD & FeatGLaC Modules</span>
+                    </a>
+                    <a href="#bigdata" class="toc-item">
+                        <strong>📊 Big Data</strong>
+                        <span>Triển khai Song song trên Kaggle</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 1: VẤN ĐỀ -->
+        <section id="paper">
+            <div class="section-content">
+                <h2>Phân Tích Vấn Đề</h2>
+                <div class="grid-2">
+                    <div class="problem-box">
+                        <h3><i class="fa-solid fa-triangle-exclamation"></i> Thách Thức</h3>
+                        <p>Các mô hình chỉnh sửa ảnh AI hiện nay (như Inpainting) hoạt động tốt trên 2D nhưng <strong>"mù" về không gian 3D</strong>.</p>
+                        <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 1rem 0;">
+                        <p><em>Ví dụ: Khi chèn một vật thể vào ảnh, nó thường dán đè lên mọi thứ thay vì nằm sau các vật thể ở gần hơn (sai Occlusion).</em></p>
+                    </div>
+                    <div class="solution-box">
+                        <h3><i class="fa-solid fa-check-circle"></i> Giải Pháp Zero-Shot</h3>
+                        <p>Đề xuất phương pháp không cần huấn luyện lại (Training-free), gồm 2 bước:</p>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                            <li><strong>DeGLaD:</strong> Tách lớp dựa trên độ sâu.</li>
+                            <li><strong>FeatGLaC:</strong> Ghép ảnh dựa trên đặc trưng (Feature Injection).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: MÔ HÌNH -->
+        <section id="model">
+            <div class="section-content">
+                <h2>Các Thành Phần Cốt Lõi</h2>
+                <div class="card-container">
+                    <div class="info-card">
+                        <h4>1. Backbone: Diffusion</h4>
+                        <p>Sử dụng <strong>Stable Diffusion</strong> làm nền tảng sinh ảnh. Đây là mô hình sinh xác suất mạnh mẽ nhất hiện nay.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>2. Depth Estimator</h4>
+                        <p>Sử dụng <strong>MiDaS</strong> hoặc <strong>ZoeDepth</strong> để tạo bản đồ độ sâu (Depth Map) từ ảnh 2D đầu vào.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>3. Identity Preserver</h4>
+                        <p>Sử dụng <strong>AnyDoor</strong> để mã hóa vật thể, đảm bảo khi chèn vào ảnh mới vật thể không bị biến dạng.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>4. Loss Functions</h4>
+                        <p>Kết hợp Noise Prediction Loss (MSE) và Perceptual Loss (LPIPS) để đảm bảo độ chân thực.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: KIẾN TRÚC -->
+        <section id="arch">
+            <div class="section-content">
+                <h2>Kiến Trúc Hệ Thống</h2>
+                
+                <!-- DIAGRAM 1: DeGLaD -->
+                <div class="diagram-box">
+                    <h3 style="text-align: center; color: #2c3e50;">Module 1: DeGLaD (Tách Lớp)</h3>
+                    <p style="text-align: center; color: #7f8c8d; font-size: 0.9rem;">Depth-Guided Layer Decomposition</p>
+                    <div class="mermaid">
+                        graph LR
+                        Img["📸 Ảnh RGB"]
+                        Depth["🌊 Depth Map"]
+                        Thresh["Ngưỡng d"]
+                        Compare{"So sánh"}
+                        MaskFG["✅ Mask<br/>Tiền cảnh"]
+                        MaskBG["✅ Mask<br/>Hậu cảnh"]
+                        L1["🎞️ Layer 1<br/>Tiền cảnh"]
+                        Inpaint["🤖 Inpaint<br/>Hậu cảnh"]
+                        L2["🎞️ Layer 2<br/>Sạch"]
+                        
+                        Img --> Compare
+                        Depth --> Compare
+                        Thresh --> Compare
+                        Compare -->|"depth &lt; d"| MaskFG
+                        Compare -->|"depth &gt; d"| MaskBG
+                        MaskFG --> L1
+                        MaskBG --> Inpaint
+                        Inpaint --> L2
+                        
+                        style Compare fill:#3498db,color:white,stroke:#2c3e50,stroke-width:2px
+                        style Inpaint fill:#f39c12,color:white,stroke:#2c3e50,stroke-width:2px
+                        style L1 fill:#2ecc71,color:white,stroke:#2c3e50,stroke-width:2px
+                        style L2 fill:#2ecc71,color:white,stroke:#2c3e50,stroke-width:2px
+                    </div>
+                </div>
+
+                <!-- DIAGRAM 2: FeatGLaC -->
+                <div class="diagram-box">
+                    <h3 style="text-align: center; color: #2c3e50;">Module 2: FeatGLaC (Ghép Ảnh)</h3>
+                    <p style="text-align: center; color: #7f8c8d; font-size: 0.9rem;">Feature-Guided Layer Compositing</p>
+                    <div class="mermaid">
+                        graph LR
+                        subgraph PREP ["Chuẩn bị"]
+                        L_FG["Lớp Tiền cảnh"]
+                        L_BG["Lớp Hậu cảnh"]
+                        Noise["Nhiễu ngẫu nhiên"]
+                        end
+                        subgraph DIFFUSION ["Quá trình Diffusion"]
+                        L_FG & L_BG --> Encode["VAE Encoder"]
+                        Encode --> GuideUNet["Guidance U-Net"]
+                        GuideUNet -- "Trích xuất K, V" --> Feats["Internal Features"]
+                        Noise --> MainUNet["Generation U-Net"]
+                        Feats -.-> |"TIÊM (Injection)"| MainUNet
+                        MainUNet --> Final["Ảnh Kết Quả"]
+                        end
+                        style Feats fill:#e74c3c,color:white
+                        style MainUNet fill:#2ecc71,color:white
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: BIG DATA -->
+        <section id="bigdata">
+            <div class="section-content">
+                <h2>Triển Khai Big Data</h2>
+                <div class="solution-box" style="margin-bottom: 2rem;">
+                    <h3><i class="fa-solid fa-server"></i> Chiến lược Xử lý</h3>
+                    <p>Mở rộng mô hình để xử lý <strong>Dataset >10GB</strong> (~25,000 ảnh) trên Kaggle bằng kiến trúc Song song dữ liệu (Data Parallelism).</p>
+                </div>
+
+                <div class="diagram-box">
+                    <h3 style="text-align: center; color: #2c3e50;">Pipeline Xử Lý Song Song</h3>
+                    <div class="mermaid">
+                        graph TD
+                        subgraph STORAGE ["Lớp Lưu Trữ"]
+                        Raw["Dataset Thô (>10GB)"]
+                        Meta["File List"]
+                        end
+                        subgraph CONTROL ["Điều Phối (CPU)"]
+                        Loader["Data Loader"]
+                        Batch["Chia Batch (32 ảnh)"]
+                        Meta --> Loader --> Batch
+                        end
+                        subgraph COMPUTE ["Cụm Tính Toán (GPU T4 x2)"]
+                        Batch --> GPU1["Worker 1 (GPU 0)"]
+                        Batch --> GPU2["Worker 2 (GPU 1)"]
+                        subgraph LOGIC ["Quy trình Worker"]
+                        L1["Load"] --> L2["DeGLaD"] --> L3["Edit"] --> L4["FeatGLaC"]
+                        end
+                        GPU1 --> LOGIC
+                        GPU2 --> LOGIC
+                        end
+                        subgraph AGGREGATION ["Tổng Hợp"]
+                        LOGIC --> Save["Lưu File"]
+                        Save --> Metric["Tính RMSE"]
+                        end
+                        style STORAGE fill:#ecf0f1
+                        style COMPUTE fill:#e8f8f5
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <h3>Zero-Shot Depth-Aware Image Editing</h3>
+        <p>Báo cáo Đồ án Môn học Big Data • ICCV 2025</p>
+        <p style="font-size: 0.9rem; margin-top: 1rem; opacity: 0.7;">Thực hiện trên Kaggle & Hadoop</p>
+    </footer>
+
+    <script>
+        // Khởi tạo Mermaid
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+
+        // Progress Bar & Active Link Logic
+        window.addEventListener('scroll', () => {
+            const winScroll = document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.querySelector('.progress-bar').style.width = scrolled + "%";
+
+            // Active Menu
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('nav a');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (window.scrollY >= sectionTop - 150) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
