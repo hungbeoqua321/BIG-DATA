@@ -132,17 +132,68 @@
 
         /* ===== CAROUSEL / CARDS ===== */
         .card-container {
-            display: flex; gap: 1.5rem; overflow-x: auto; padding: 1rem 0 2rem;
+            display: flex; 
+            gap: 0; 
+            overflow-x: auto;
             scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            padding: 0;
         }
+        
+        .card-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .card-container::-webkit-scrollbar-track {
+            background: #ecf0f1;
+            border-radius: 10px;
+        }
+        .card-container::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        
         .info-card {
-            flex: 0 0 300px;
-            background: white; padding: 2rem; border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            scroll-snap-align: center;
-            border-top: 4px solid #3498db;
+            flex: 0 0 100vw;
+            background: white; 
+            padding: 6rem 4rem;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset -1px 0 0 0 #e1e1e1;
         }
-        .info-card h4 { font-size: 1.2rem; margin-bottom: 1rem; color: #2c3e50; }
+        .info-card h4 { 
+            font-size: 2rem; 
+            margin-bottom: 2rem; 
+            color: #2c3e50;
+            text-align: center;
+        }
+        .info-card > p {
+            font-size: 1.1rem;
+            text-align: center;
+            max-width: 700px;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 3rem;
+        }
+        .card-diagram {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        .card-diagram .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
 
         /* ===== DIAGRAM BOX ===== */
         .diagram-box {
@@ -256,24 +307,122 @@
 
         <!-- SECTION 2: MÔ HÌNH -->
         <section id="model">
-            <div class="section-content">
-                <h2>Các Thành Phần Cốt Lõi</h2>
+            <div class="section-content" style="width: 100%; padding: 0;">
+                <h2 style="padding: 2rem 2rem 0;">Các Thành Phần Cốt Lõi</h2>
+                <p style="text-align: center; color: #7f8c8d; font-size: 0.95rem; padding: 0 2rem; margin-bottom: 1rem;">
+                    👉 Cuộn ngang để xem chi tiết từng thành phần
+                </p>
                 <div class="card-container">
+                    <!-- Card 1: Diffusion Backbone -->
                     <div class="info-card">
-                        <h4>1. Backbone: Diffusion</h4>
-                        <p>Sử dụng <strong>Stable Diffusion</strong> làm nền tảng sinh ảnh. Đây là mô hình sinh xác suất mạnh mẽ nhất hiện nay.</p>
+                        <h4>1️⃣ Backbone: Stable Diffusion</h4>
+                        <p>Mô hình sinh xác suất mạnh mẽ. Sử dụng phương pháp ngược lại từ ảnh ngẫu nhiên → ảnh có chứa thông tin.</p>
+                        <div class="card-diagram">
+                            <div class="mermaid">
+                                graph LR
+                                Noise["🎲 Nhiễu<br/>Ngẫu nhiên"]
+                                Denoise["🔄 Quá trình<br/>Khử Nhiễu"]
+                                FeatExt["🧠 Trích xuất<br/>Đặc trưng"]
+                                ImgGen["🖼️ Sinh<br/>Ảnh"]
+                                
+                                Noise --> Denoise
+                                Denoise --> FeatExt
+                                FeatExt --> ImgGen
+                                
+                                style Noise fill:#e74c3c,color:white
+                                style Denoise fill:#f39c12,color:white
+                                style FeatExt fill:#9b59b6,color:white
+                                style ImgGen fill:#2ecc71,color:white
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Card 2: Depth Estimator -->
                     <div class="info-card">
-                        <h4>2. Depth Estimator</h4>
-                        <p>Sử dụng <strong>MiDaS</strong> hoặc <strong>ZoeDepth</strong> để tạo bản đồ độ sâu (Depth Map) từ ảnh 2D đầu vào.</p>
+                        <h4>2️⃣ Depth Estimator: MiDaS / ZoeDepth</h4>
+                        <p>Ước tính độ sâu từ ảnh 2D. Tạo bản đồ độ sâu (Depth Map) để biết vị trí 3D của từng pixel.</p>
+                        <div class="card-diagram">
+                            <div class="mermaid">
+                                graph LR
+                                Input["📸 Ảnh RGB<br/>2D"]
+                                Model["🧠 Mô hình MiDaS"]
+                                Process["📊 Xử lý<br/>Sâu"]
+                                Output["🌊 Depth Map<br/>0-255"]
+                                
+                                Input --> Model
+                                Model --> Process
+                                Process --> Output
+                                
+                                Output -->|"Gần"| Close["🔴 Giá trị Cao"]
+                                Output -->|"Xa"| Far["🔵 Giá trị Thấp"]
+                                
+                                style Input fill:#3498db,color:white
+                                style Model fill:#9b59b6,color:white
+                                style Output fill:#e74c3c,color:white
+                                style Close fill:#e74c3c,color:white
+                                style Far fill:#3498db,color:white
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Card 3: Identity Preserver -->
                     <div class="info-card">
-                        <h4>3. Identity Preserver</h4>
-                        <p>Sử dụng <strong>AnyDoor</strong> để mã hóa vật thể, đảm bảo khi chèn vào ảnh mới vật thể không bị biến dạng.</p>
+                        <h4>3️⃣ Identity Preserver: AnyDoor</h4>
+                        <p>Mã hóa vật thể để không bị biến dạng. Giữ nguyên hình dạng khi chèn vào ảnh mới.</p>
+                        <div class="card-diagram">
+                            <div class="mermaid">
+                                graph TD
+                                Obj["🎯 Vật thể<br/>Cần Chèn"]
+                                Encode["🔒 AnyDoor<br/>Encoder"]
+                                FeatureVec["📈 Vector<br/>Đặc trưng"]
+                                Target["🎨 Ảnh Đích"]
+                                Inject["💉 Tiêm<br/>Đặc trưng"]
+                                Result["✨ Kết quả<br/>Không biến dạng"]
+                                
+                                Obj --> Encode
+                                Encode --> FeatureVec
+                                FeatureVec --> Inject
+                                Target --> Inject
+                                Inject --> Result
+                                
+                                style Encode fill:#e74c3c,color:white
+                                style FeatureVec fill:#f39c12,color:white
+                                style Inject fill:#9b59b6,color:white
+                                style Result fill:#2ecc71,color:white
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Card 4: Loss Functions -->
                     <div class="info-card">
-                        <h4>4. Loss Functions</h4>
-                        <p>Kết hợp Noise Prediction Loss (MSE) và Perceptual Loss (LPIPS) để đảm bảo độ chân thực.</p>
+                        <h4>4️⃣ Loss Functions & Optimization</h4>
+                        <p>Kết hợp 2 loại hàm mất mát để đảm bảo ảnh chân thực và chi tiết.</p>
+                        <div class="card-diagram">
+                            <div class="mermaid">
+                                graph TB
+                                subgraph LOSS ["Hàm Mất Mát"]
+                                MSE["📊 Noise Prediction<br/>Loss MSE"]
+                                LPIPS["🎨 Perceptual<br/>Loss LPIPS"]
+                                end
+                                subgraph OPTIMIZE ["Tối Ưu Hóa"]
+                                Combine["⚖️ Kết hợp<br/>Weighted Sum"]
+                                end
+                                subgraph RESULT ["Kết Quả"]
+                                Real["✅ Ảnh Chân Thực"]
+                                Detail["✅ Chi Tiết Sắc Nét"]
+                                end
+                                
+                                MSE --> Combine
+                                LPIPS --> Combine
+                                Combine --> Real
+                                Combine --> Detail
+                                
+                                style MSE fill:#3498db,color:white
+                                style LPIPS fill:#9b59b6,color:white
+                                style Real fill:#2ecc71,color:white
+                                style Detail fill:#2ecc71,color:white
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
