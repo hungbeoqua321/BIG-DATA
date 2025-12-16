@@ -157,42 +157,50 @@
         .info-card {
             flex: 0 0 100vw;
             background: white; 
-            padding: 6rem 4rem;
+            padding: 3rem 2rem;
             scroll-snap-align: start;
             scroll-snap-stop: always;
-            min-height: 100vh;
+            min-height: auto;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             box-shadow: inset -1px 0 0 0 #e1e1e1;
+            overflow-x: hidden;
         }
         .info-card h4 { 
-            font-size: 2rem; 
-            margin-bottom: 2rem; 
+            font-size: 1.5rem; 
+            margin-bottom: 1rem; 
             color: #2c3e50;
             text-align: center;
         }
         .info-card > p {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             text-align: center;
-            max-width: 700px;
-            line-height: 1.8;
+            max-width: 85vw;
+            line-height: 1.6;
             color: #555;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
         }
         .card-diagram {
-            flex: 1;
+            flex: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             width: 100%;
-            max-width: 800px;
+            max-width: 90vw;
+            margin-top: 1rem;
         }
         .card-diagram .mermaid {
             width: 100%;
             display: flex;
             justify-content: center;
+            max-height: 250px;
+            overflow: auto;
+        }
+        .card-diagram svg {
+            max-width: 100%;
+            height: auto;
         }
 
         /* ===== DIAGRAM BOX ===== */
@@ -263,20 +271,20 @@
                 
                 <div class="toc-grid">
                     <a href="#paper" class="toc-item">
-                        <strong>📄 Vấn Đề</strong>
-                        <span>Hạn chế của mô hình hiện tại & Giải pháp Zero-shot</span>
+                        <strong>Vấn Đề</strong>
+                        <span>Hạn chế hiện tại & Giải pháp Zero-shot</span>
                     </a>
                     <a href="#model" class="toc-item">
-                        <strong>🤖 Mô Hình</strong>
-                        <span>Stable Diffusion + Depth + Identity</span>
+                        <strong>Các Thành Phần</strong>
+                        <span>Diffusion + Depth + Identity</span>
                     </a>
                     <a href="#arch" class="toc-item">
-                        <strong>🏗️ Kiến Trúc</strong>
+                        <strong>Kiến Trúc</strong>
                         <span>DeGLaD & FeatGLaC Modules</span>
                     </a>
                     <a href="#bigdata" class="toc-item">
-                        <strong>📊 Big Data</strong>
-                        <span>Triển khai Song song trên Kaggle</span>
+                        <strong>Big Data</strong>
+                        <span>Xử lý song song trên Kaggle</span>
                     </a>
                 </div>
             </div>
@@ -289,16 +297,16 @@
                 <div class="grid-2">
                     <div class="problem-box">
                         <h3><i class="fa-solid fa-triangle-exclamation"></i> Thách Thức</h3>
-                        <p>Các mô hình chỉnh sửa ảnh AI hiện nay (như Inpainting) hoạt động tốt trên 2D nhưng <strong>"mù" về không gian 3D</strong>.</p>
+                        <p>Các mô hình chỉnh sửa ảnh AI hiện nay hoạt động tốt trên 2D nhưng "mù" về không gian 3D.</p>
                         <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 1rem 0;">
-                        <p><em>Ví dụ: Khi chèn một vật thể vào ảnh, nó thường dán đè lên mọi thứ thay vì nằm sau các vật thể ở gần hơn (sai Occlusion).</em></p>
+                        <p><em>Ví dụ: Vật thể chèn vào thường bị dán lên mọi thứ thay vì tuân theo quy luật che khuất (occlusion).</em></p>
                     </div>
                     <div class="solution-box">
                         <h3><i class="fa-solid fa-check-circle"></i> Giải Pháp Zero-Shot</h3>
-                        <p>Đề xuất phương pháp không cần huấn luyện lại (Training-free), gồm 2 bước:</p>
+                        <p>Phương pháp không cần huấn luyện lại (Training-free), gồm 2 bước:</p>
                         <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
                             <li><strong>DeGLaD:</strong> Tách lớp dựa trên độ sâu.</li>
-                            <li><strong>FeatGLaC:</strong> Ghép ảnh dựa trên đặc trưng (Feature Injection).</li>
+                            <li><strong>FeatGLaC:</strong> Ghép ảnh dựa trên đặc trưng.</li>
                         </ul>
                     </div>
                 </div>
@@ -307,122 +315,51 @@
 
         <!-- SECTION 2: MÔ HÌNH -->
         <section id="model">
-            <div class="section-content" style="width: 100%; padding: 0;">
-                <h2 style="padding: 2rem 2rem 0;">Các Thành Phần Cốt Lõi</h2>
-                <p style="text-align: center; color: #7f8c8d; font-size: 0.95rem; padding: 0 2rem; margin-bottom: 1rem;">
-                    👉 Cuộn ngang để xem chi tiết từng thành phần
+            <div class="section-content">
+                <h2>Các Thành Phần Cốt Lõi</h2>
+                <p style="text-align: center; color: #7f8c8d; font-size: 0.95rem; margin-bottom: 2rem;">
+                    Ba module chính trong hệ thống
                 </p>
-                <div class="card-container">
-                    <!-- Card 1: Diffusion Backbone -->
-                    <div class="info-card">
-                        <h4>1️⃣ Backbone: Stable Diffusion</h4>
-                        <p>Mô hình sinh xác suất mạnh mẽ. Sử dụng phương pháp ngược lại từ ảnh ngẫu nhiên → ảnh có chứa thông tin.</p>
-                        <div class="card-diagram">
-                            <div class="mermaid">
-                                graph LR
-                                Noise["🎲 Nhiễu<br/>Ngẫu nhiên"]
-                                Denoise["🔄 Quá trình<br/>Khử Nhiễu"]
-                                FeatExt["🧠 Trích xuất<br/>Đặc trưng"]
-                                ImgGen["🖼️ Sinh<br/>Ảnh"]
-                                
-                                Noise --> Denoise
-                                Denoise --> FeatExt
-                                FeatExt --> ImgGen
-                                
-                                style Noise fill:#e74c3c,color:white
-                                style Denoise fill:#f39c12,color:white
-                                style FeatExt fill:#9b59b6,color:white
-                                style ImgGen fill:#2ecc71,color:white
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Card 2: Depth Estimator -->
-                    <div class="info-card">
-                        <h4>2️⃣ Depth Estimator: MiDaS / ZoeDepth</h4>
-                        <p>Ước tính độ sâu từ ảnh 2D. Tạo bản đồ độ sâu (Depth Map) để biết vị trí 3D của từng pixel.</p>
-                        <div class="card-diagram">
-                            <div class="mermaid">
-                                graph LR
-                                Input["📸 Ảnh RGB<br/>2D"]
-                                Model["🧠 Mô hình MiDaS"]
-                                Process["📊 Xử lý<br/>Sâu"]
-                                Output["🌊 Depth Map<br/>0-255"]
-                                
-                                Input --> Model
-                                Model --> Process
-                                Process --> Output
-                                
-                                Output -->|"Gần"| Close["🔴 Giá trị Cao"]
-                                Output -->|"Xa"| Far["🔵 Giá trị Thấp"]
-                                
-                                style Input fill:#3498db,color:white
-                                style Model fill:#9b59b6,color:white
-                                style Output fill:#e74c3c,color:white
-                                style Close fill:#e74c3c,color:white
-                                style Far fill:#3498db,color:white
-                            </div>
-                        </div>
+                <!-- Module 1: Latent Diffusion -->
+                <div class="diagram-box" style="margin-bottom: 3rem;">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Latent Diffusion Model</h3>
+                    <div class="mermaid">
+                        graph LR
+                        A["Đầu vào: Nhiễu<br/>(Latent Space)"] --> B["Quá trình<br/>Khử nhiễu"] --> C["Trích xuất<br/>Đặc trưng"] --> D["Đầu ra:<br/>Ảnh"]
+                        
+                        style A fill:#e8e8e8,stroke:#666,stroke-width:2px
+                        style B fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style C fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style D fill:#b8b8b8,stroke:#666,stroke-width:2px
                     </div>
+                </div>
 
-                    <!-- Card 3: Identity Preserver -->
-                    <div class="info-card">
-                        <h4>3️⃣ Identity Preserver: AnyDoor</h4>
-                        <p>Mã hóa vật thể để không bị biến dạng. Giữ nguyên hình dạng khi chèn vào ảnh mới.</p>
-                        <div class="card-diagram">
-                            <div class="mermaid">
-                                graph TD
-                                Obj["🎯 Vật thể<br/>Cần Chèn"]
-                                Encode["🔒 AnyDoor<br/>Encoder"]
-                                FeatureVec["📈 Vector<br/>Đặc trưng"]
-                                Target["🎨 Ảnh Đích"]
-                                Inject["💉 Tiêm<br/>Đặc trưng"]
-                                Result["✨ Kết quả<br/>Không biến dạng"]
-                                
-                                Obj --> Encode
-                                Encode --> FeatureVec
-                                FeatureVec --> Inject
-                                Target --> Inject
-                                Inject --> Result
-                                
-                                style Encode fill:#e74c3c,color:white
-                                style FeatureVec fill:#f39c12,color:white
-                                style Inject fill:#9b59b6,color:white
-                                style Result fill:#2ecc71,color:white
-                            </div>
-                        </div>
+                <!-- Module 2: Depth Estimator -->
+                <div class="diagram-box" style="margin-bottom: 3rem;">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Depth Estimation Module</h3>
+                    <div class="mermaid">
+                        graph LR
+                        A["Đầu vào: Ảnh<br/>RGB"] --> B["MiDaS /<br/>ZoeDepth"] --> C["Xử lý"] --> D["Đầu ra: Bản đồ<br/>Độ sâu"]
+                        
+                        style A fill:#e8e8e8,stroke:#666,stroke-width:2px
+                        style B fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style C fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style D fill:#b8b8b8,stroke:#666,stroke-width:2px
                     </div>
+                </div>
 
-                    <!-- Card 4: Loss Functions -->
-                    <div class="info-card">
-                        <h4>4️⃣ Loss Functions & Optimization</h4>
-                        <p>Kết hợp 2 loại hàm mất mát để đảm bảo ảnh chân thực và chi tiết.</p>
-                        <div class="card-diagram">
-                            <div class="mermaid">
-                                graph TB
-                                subgraph LOSS ["Hàm Mất Mát"]
-                                MSE["📊 Noise Prediction<br/>Loss MSE"]
-                                LPIPS["🎨 Perceptual<br/>Loss LPIPS"]
-                                end
-                                subgraph OPTIMIZE ["Tối Ưu Hóa"]
-                                Combine["⚖️ Kết hợp<br/>Weighted Sum"]
-                                end
-                                subgraph RESULT ["Kết Quả"]
-                                Real["✅ Ảnh Chân Thực"]
-                                Detail["✅ Chi Tiết Sắc Nét"]
-                                end
-                                
-                                MSE --> Combine
-                                LPIPS --> Combine
-                                Combine --> Real
-                                Combine --> Detail
-                                
-                                style MSE fill:#3498db,color:white
-                                style LPIPS fill:#9b59b6,color:white
-                                style Real fill:#2ecc71,color:white
-                                style Detail fill:#2ecc71,color:white
-                            </div>
-                        </div>
+                <!-- Module 3: Identity Preserver -->
+                <div class="diagram-box">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Identity Preserver (AnyDoor)</h3>
+                    <div class="mermaid">
+                        graph LR
+                        A["Vật thể<br/>Tham chiếu"] --> B["Bộ mã hóa<br/>AnyDoor"] --> C["Vector<br/>Đặc trưng"] --> D["Đầu ra: Đặc trưng<br/>Bảo toàn"]
+                        
+                        style A fill:#e8e8e8,stroke:#666,stroke-width:2px
+                        style B fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style C fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style D fill:#b8b8b8,stroke:#666,stroke-width:2px
                     </div>
                 </div>
             </div>
@@ -434,58 +371,85 @@
                 <h2>Kiến Trúc Hệ Thống</h2>
                 
                 <!-- DIAGRAM 1: DeGLaD -->
-                <div class="diagram-box">
-                    <h3 style="text-align: center; color: #2c3e50;">Module 1: DeGLaD (Tách Lớp)</h3>
-                    <p style="text-align: center; color: #7f8c8d; font-size: 0.9rem;">Depth-Guided Layer Decomposition</p>
+                <div class="diagram-box" style="padding: 1rem;">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.5rem; font-size: 0.95rem;">DeGLaD: Depth-Guided Layer Decomposition</h3>
                     <div class="mermaid">
-                        graph LR
-                        Img["📸 Ảnh RGB"]
-                        Depth["🌊 Depth Map"]
-                        Thresh["Ngưỡng d"]
-                        Compare{"So sánh"}
-                        MaskFG["✅ Mask<br/>Tiền cảnh"]
-                        MaskBG["✅ Mask<br/>Hậu cảnh"]
-                        L1["🎞️ Layer 1<br/>Tiền cảnh"]
-                        Inpaint["🤖 Inpaint<br/>Hậu cảnh"]
-                        L2["🎞️ Layer 2<br/>Sạch"]
+                        graph TD
+                        subgraph INPUTS ["Đầu vào"]
+                            A["Ảnh gốc I"]
+                            B["Depth Map Z"]
+                            MASK["Mask M"]
+                        end
                         
-                        Img --> Compare
-                        Depth --> Compare
-                        Thresh --> Compare
-                        Compare -->|"depth &lt; d"| MaskFG
-                        Compare -->|"depth &gt; d"| MaskBG
-                        MaskFG --> L1
-                        MaskBG --> Inpaint
-                        Inpaint --> L2
+                        subgraph DECOMP_PROC ["Xử lý tách lớp"]
+                            VAE["VAE Encoder"]
+                            NORM["Normalize<br/>Depth"]
+                            DECOMP["Layer Decomposition<br/>Network"]
+                        end
                         
-                        style Compare fill:#3498db,color:white,stroke:#2c3e50,stroke-width:2px
-                        style Inpaint fill:#f39c12,color:white,stroke:#2c3e50,stroke-width:2px
-                        style L1 fill:#2ecc71,color:white,stroke:#2c3e50,stroke-width:2px
-                        style L2 fill:#2ecc71,color:white,stroke:#2c3e50,stroke-width:2px
+                        subgraph OUTPUTS ["Đầu ra"]
+                            FG["Lớp Foreground"]
+                            BG["Lớp Background"]
+                        end
+                        
+                        A --> VAE
+                        B --> NORM
+                        MASK --> NORM
+                        VAE --> DECOMP
+                        NORM --> DECOMP
+                        DECOMP --> FG
+                        DECOMP --> BG
+                        
+                        style INPUTS fill:#f0f0f0,stroke:#666,stroke-width:2px
+                        style DECOMP_PROC fill:#e8e8e8,stroke:#666,stroke-width:2px
+                        style OUTPUTS fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style DECOMP fill:#c0c0c0,stroke:#333,stroke-width:2px
                     </div>
                 </div>
 
                 <!-- DIAGRAM 2: FeatGLaC -->
-                <div class="diagram-box">
-                    <h3 style="text-align: center; color: #2c3e50;">Module 2: FeatGLaC (Ghép Ảnh)</h3>
-                    <p style="text-align: center; color: #7f8c8d; font-size: 0.9rem;">Feature-Guided Layer Compositing</p>
-                    <div class="mermaid">
+                <div class="diagram-box" style="padding: 0.6rem; overflow-x: auto;">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.2rem; font-size: 0.85rem;">FeatGLaC: Feature-Guided Layer Compositing</h3>
+                    <div class="mermaid" style="font-size: 13px;">
                         graph LR
-                        subgraph PREP ["Chuẩn bị"]
-                        L_FG["Lớp Tiền cảnh"]
-                        L_BG["Lớp Hậu cảnh"]
-                        Noise["Nhiễu ngẫu nhiên"]
+                        subgraph INPUTS ["Inputs"]
+                            FG["Foreground Layer"]
+                            BG["Background Layer"]
+                            Noise["Random Noise"]
                         end
-                        subgraph DIFFUSION ["Quá trình Diffusion"]
-                        L_FG & L_BG --> Encode["VAE Encoder"]
-                        Encode --> GuideUNet["Guidance U-Net"]
-                        GuideUNet -- "Trích xuất K, V" --> Feats["Internal Features"]
-                        Noise --> MainUNet["Generation U-Net"]
-                        Feats -.-> |"TIÊM (Injection)"| MainUNet
-                        MainUNet --> Final["Ảnh Kết Quả"]
+                        
+                        subgraph GUIDANCE ["Guidance Branch"]
+                            VAE1["VAE Encoder"]
+                            GUNET["Guidance U-Net"]
+                            EXTRACT["Extract K, V<br/>Features"]
                         end
-                        style Feats fill:#e74c3c,color:white
-                        style MainUNet fill:#2ecc71,color:white
+                        
+                        subgraph GENERATION ["Generation Branch"]
+                            GSTART["Latent Noise"]
+                            GNET["Generation U-Net"]
+                            INJECT["Feature Injection<br/>per Step"]
+                        end
+                        
+                        subgraph DECODE ["Decoding"]
+                            VAE2["VAE Decoder"]
+                        end
+                        
+                        FG --> VAE1
+                        BG --> VAE1
+                        VAE1 --> GUNET
+                        GUNET --> EXTRACT
+                        Noise --> GSTART
+                        GSTART --> GNET
+                        EXTRACT -.->|"Inject at each<br/>denoising step"| INJECT
+                        GNET --> INJECT
+                        INJECT --> VAE2
+                        VAE2 --> OUTPUT["Final Output"]
+                        
+                        style GUIDANCE fill:#f0f0f0,stroke:#666,stroke-width:2px
+                        style GENERATION fill:#e8e8e8,stroke:#666,stroke-width:2px
+                        style INJECT fill:#d0d0d0,stroke:#333,stroke-width:2px
+                        style EXTRACT fill:#d0d0d0,stroke:#333,stroke-width:2px
+                        style OUTPUT fill:#b8b8b8,stroke:#333,stroke-width:2px
                     </div>
                 </div>
             </div>
@@ -501,33 +465,50 @@
                 </div>
 
                 <div class="diagram-box">
-                    <h3 style="text-align: center; color: #2c3e50;">Pipeline Xử Lý Song Song</h3>
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Big Data Pipeline: Parallel Processing</h3>
                     <div class="mermaid">
                         graph TD
-                        subgraph STORAGE ["Lớp Lưu Trữ"]
-                        Raw["Dataset Thô (>10GB)"]
-                        Meta["File List"]
+                        subgraph STORAGE ["Data Storage"]
+                            A["4K Video"]
+                            B["Frame Extraction"]
+                            C["25K Images<br/>~10GB Dataset"]
                         end
-                        subgraph CONTROL ["Điều Phối (CPU)"]
-                        Loader["Data Loader"]
-                        Batch["Chia Batch (32 ảnh)"]
-                        Meta --> Loader --> Batch
+                        
+                        subgraph CONTROL ["Data Controller"]
+                            D["File List"]
+                            E["DataLoader<br/>Streaming"]
+                            F["Batch Division<br/>Size=32"]
                         end
-                        subgraph COMPUTE ["Cụm Tính Toán (GPU T4 x2)"]
-                        Batch --> GPU1["Worker 1 (GPU 0)"]
-                        Batch --> GPU2["Worker 2 (GPU 1)"]
-                        subgraph LOGIC ["Quy trình Worker"]
-                        L1["Load"] --> L2["DeGLaD"] --> L3["Edit"] --> L4["FeatGLaC"]
+                        
+                        subgraph WORKERS ["Compute Workers - GPU T4 x2"]
+                            G1["GPU-0<br/>Worker"]
+                            G2["GPU-1<br/>Worker"]
+                            PROC["DeGLaD<br/>+ FeatGLaC"]
                         end
-                        GPU1 --> LOGIC
-                        GPU2 --> LOGIC
+                        
+                        subgraph OUTPUT ["Aggregation"]
+                            H["Save Results"]
+                            I["Calculate RMSE"]
                         end
-                        subgraph AGGREGATION ["Tổng Hợp"]
-                        LOGIC --> Save["Lưu File"]
-                        Save --> Metric["Tính RMSE"]
-                        end
-                        style STORAGE fill:#ecf0f1
-                        style COMPUTE fill:#e8f8f5
+                        
+                        A --> B
+                        B --> C
+                        C --> D
+                        D --> E
+                        E --> F
+                        F --> G1
+                        F --> G2
+                        G1 --> PROC
+                        G2 --> PROC
+                        PROC --> H
+                        H --> I
+                        
+                        style STORAGE fill:#f5f5f5,stroke:#666,stroke-width:2px
+                        style CONTROL fill:#e8e8e8,stroke:#666,stroke-width:2px
+                        style G1 fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style G2 fill:#d0d0d0,stroke:#666,stroke-width:2px
+                        style PROC fill:#c0c0c0,stroke:#333,stroke-width:2px
+                        style OUTPUT fill:#b8b8b8,stroke:#333,stroke-width:2px
                     </div>
                 </div>
             </div>
@@ -569,6 +550,28 @@
                     link.classList.add('active');
                 }
             });
+        });
+
+        // Keyboard Navigation cho Card Container
+        document.addEventListener('keydown', (e) => {
+            const modelSection = document.getElementById('model');
+            const cardContainer = modelSection?.querySelector('.card-container');
+            
+            if (!cardContainer || !modelSection.offsetParent) return;
+            
+            // Kiểm tra nếu đang ở phần Model
+            const modelRect = modelSection.getBoundingClientRect();
+            if (modelRect.top > window.innerHeight || modelRect.bottom < 0) return;
+            
+            const scrollAmount = 400;
+            
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                cardContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                cardContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            }
         });
     </script>
 </body>
