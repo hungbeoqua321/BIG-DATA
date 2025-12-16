@@ -1,187 +1,451 @@
-# Zero-Shot Depth-Aware Image Editing
+# BÁO CÁO KỸ THUẬT: ZERO-SHOT DEPTH-AWARE IMAGE EDITING
+**Chỉnh sửa ảnh nhận biết độ sâu không cần huấn luyện lại**
+
+Nguồn tài liệu: Parihar et al., "Zero-Shot Depth-Aware Image Editing with Diffusion Models", ICCV 2025.
 
 ---
 
-## 1. Phân tích Bài báo (Paper Analysis)
+## 0. BẢNG THUẬT NGỮ & ĐỊNH NGHĨA
 
-**Dựa trên:** Paper "Zero-Shot Depth-Aware Image Editing with Diffusion Models" (ICCV 2025)
-
-### A. Abstract (Tóm tắt)
-
-#### **Vấn đề (Problem)**
-- Các mô hình Diffusion hiện nay sửa ảnh rất tốt nhưng **gặp khó khăn trong việc hiểu không gian 3D** (độ sâu)
-- **Ví dụ:** Việc đặt một vật thể (cái ghế) ra sau cái bàn nhưng phải nằm trước bức tường là rất khó thực hiện chỉ bằng text prompt
-
-#### **Giải pháp (Solution)**
-Phương pháp Zero-shot (không cần huấn luyện lại mô hình) bao gồm 2 bước chính:
-
-1. **Depth-Guided Layer Decomposition (DeGLaD)**
-   - Tự động tách ảnh thành các lớp (Tiền cảnh & Hậu cảnh)
-   - Dựa trên giá trị độ sâu do người dùng chỉ định
-
-2. **Feature Guided Layer Compositing (FeatGLaC)**
-   - Trộn các lớp ngay trong không gian đặc trưng (feature space) của U-Net
-   - Thay thế việc cắt dán pixel thô thiển
-   - Giúp các layer hòa trộn tự nhiên hơn
-
-#### **Kết quả (Output)**
-✅ Tạo ra ảnh ghép vật thể/cảnh tuân thủ quy luật 3D  
-✅ Ánh sáng hài hòa tự nhiên  
-✅ Không cần mô hình hậu kỳ (harmonization)
-
-### B. Kết luận (Conclusion)
-
-#### **Ưu điểm**
-- Vượt trội hơn các kỹ thuật cắt dán (copy-paste) truyền thống
-- Vượt trội hơn các mô hình inpainting thông thường
-- **Bảo toàn cấu trúc 3D** của cảnh quan
-
-#### **Hạn chế**
-- Phụ thuộc vào độ chính xác của mô hình ước lượng độ sâu (MiDaS/ZoeDepth)
-- Nếu Depth Map sai → Kết quả chỉnh sửa cũng sai lệch
+| Thuật ngữ | Giải thích chi tiết |
+|-----------|-------------------|
+| **Zero-Shot** | Khả năng thực hiện tác vụ mới mà không cần huấn luyện lại. AI có thể dùng ngay trên dữ liệu chưa từng thấy mà vẫn hoạt động tốt. |
+| **Diffusion Models** | Mô hình khuếch tán - phương pháp sinh ảnh bằng cách học khử nhiễu. Bắt đầu từ ảnh nhiễu hoàn toàn, dần dần khôi phục lại ảnh rõ nét. Ví dụ: Stable Diffusion. |
+| **Depth-Aware** | Nhận thức độ sâu - khả năng hiểu không gian 3D (trục Z). Máy biết vật nào ở gần, vật nào ở xa. |
+| **Occlusion** | Sự che khuất - hiện tượng vật ở gần che khuất vật ở xa. Xử lý đúng occlusion là yếu tố sống còn để ảnh ghép tự nhiên. |
+| **Inpainting** | Vẽ bù/Điền khuyết - kỹ thuật dùng AI tự động vẽ lại phần hình ảnh bị mất hoặc bị che khuất. |
+| **Latent Space** | Không gian tiềm ẩn - dữ liệu ảnh được nén thành vector đặc trưng để xử lý nhanh hơn. |
+| **Self-Attention** | Cơ chế tự chú ý - cách AI xác định mối quan hệ giữa các điểm ảnh. |
+| **Feature Injection** | Tiêm đặc trưng - can thiệp vào mô hình để ép nó tuân theo cấu trúc mong muốn. |
+| **Data Parallelism** | Song song dữ liệu - chia dữ liệu thành nhiều phần để xử lý trên nhiều GPU cùng lúc. |
 
 ---
 
-## 2. Bản chất Mô hình & Hàm mất mát (Model Nature & Loss Function)
+## 1. PHÂN TÍCH VẤN ĐỀ (PROBLEM STATEMENT)
 
-### A. Bản chất mô hình (Nature of the Model)
+### 1.1 Vấn đề hiện tại
 
-Đây **KHÔNG phải** một mô hình đơn lẻ mà là một **Pipeline** kết hợp sức mạnh của nhiều mô hình Pre-trained:
+Các công cụ chỉnh sửa ảnh AI (Photoshop Generative Fill, inpainting) **hoạt động trên mặt phẳng 2D** - không hiểu quan hệ không gian 3D.
 
-#### **1. Backbone (Xương sống): Latent Diffusion Model (LDM)**
-- Thường là **Stable Diffusion**
-- **Bản chất:** Mô hình sinh xác suất
-- **Chức năng:** Học cách loại bỏ nhiễu (denoising) dần dần để tạo ra ảnh rõ nét
-- **Tham số:** ~1.5B (khá lớn)
+**Ví dụ cụ thể:**
+- Khi chèn cái ghế vào ảnh: dán ghế đè lên mọi thứ (không biết ghế nằm sau bàn)
+- Ánh sáng không tự nhiên (ghế sáng trong khi bàn tối)
+- Không tạo bóng đổ phù hợp
 
-#### **2. Depth Estimator (Nhận thức độ sâu)**
-- Sử dụng: **MiDaS** hoặc **ZoeDepth**
-- **Bản chất:** Các mạng CNN/Transformer chuyên biệt
-- **Chức năng:** Dự đoán khoảng cách của từng pixel từ ảnh 2D
-- **Đầu ra:** Depth Map (bản đồ độ sâu)
+**Hậu quả:** Ảnh nhìn giả tạo, sai phối cảnh, mất tính logic vật lý.
 
-#### **3. Identity Preserver (Giữ nhân dạng vật thể)**
-- Sử dụng: **AnyDoor** (hoặc module tương tự)
-- **Bản chất:** Reference-guided Generation
-- **Chức năng:** Mã hóa ảnh vật thể tham chiếu thành feature vector và "tiêm" vào quá trình sinh ảnh
-- **Kết quả:** Vật thể không bị biến dạng
+### 1.2 Giải pháp
 
-### B. Hàm mất mát (Loss Function)
+Bài báo ICCV 2025 đề xuất quy trình **DeGLaD + FeatGLaC**:
+1. **DeGLaD:** Tách ảnh thành các lớp (tiền cảnh/hậu cảnh) dựa trên độ sâu
+2. **FeatGLaC:** Ghép lại với ánh sáng tự nhiên bằng Feature Injection
 
-> ⚠️ **Lưu ý:** Vì đây là phương pháp Zero-shot (Inference-only), **không thực hiện quá trình huấn luyện** nên sẽ không trực tiếp tối ưu hóa hàm loss nào trong lúc chạy code.
+**Tất cả đều Zero-Shot:** Không cần huấn luyện mô hình mới.
 
-Tuy nhiên, để hiểu **tại sao nó hoạt động**, các mô hình nền tảng đã được huấn luyện trước đó với các hàm loss sau:
+### 1.3 Kết quả mong đợi
 
-#### **1. Noise Prediction Loss (MSE)**
-$$\mathcal{L}_{denoise} = \mathbb{E}_{x_0, t, \epsilon} [\|\epsilon - \epsilon_\theta(x_t, t)\|_2^2]$$
+✅ Ảnh ghép tuân thủ quy luật 3D  
+✅ Ánh sáng và bóng đổ tự nhiên, hài hòa  
+✅ Không cần quá trình hậu xử lý phức tạp
 
-- **Ý nghĩa:** Máy học cách dự đoán xem lớp nhiễu nào đã được thêm vào ảnh tại thời điểm $t$
+---
 
-#### **2. Perceptual Loss (LPIPS)**
+## 2. CÁC THÀNH PHẦN CỐT LÕI (CORE COMPONENTS)
+
+Hệ thống là **pipeline kết hợp** nhiều mô hình pre-trained, không phải mô hình đơn lẻ.
+
+### 2.1 Latent Diffusion Model (LDM) - Xương sống
+
+**Bản chất:** Mô hình sinh (Generative Model) xác suất
+
+**Mô hình cụ thể:** Stable Diffusion hoặc biến thể
+
+**Cơ chế:**
+- **Quá trình Khuếch tán:** Thêm nhiễu vào ảnh gốc từ từ
+- **Quá trình Khử Nhiễu:** Học cách loại bỏ nhiễu để khôi phục ảnh rõ nét
+- **Latent Space:** Hoạt động trên không gian đặc trưng (4-8 lần nhỏ hơn pixel)
+
+**Tham số:** ~1.5 tỷ
+
+**Lợi ích:**
+- Khả năng sinh ảnh đa dạng
+- Chất lượng cao, chi tiết đẹp
+- Có thể hướng dẫn bằng text hoặc image guidance
+
+### 2.2 Depth Estimator - Cảm biến 3D
+
+**Bản chất:** Mạng CNN/Transformer chuyên biệt dự đoán độ sâu
+
+**Mô hình:** MiDaS hoặc ZoeDepth
+
+**Chức năng:**
+- Input: Ảnh 2D (RGB)
+- Output: Depth Map (giá trị 0-255 hoặc 0-1)
+  - Giá trị cao = xa (nền)
+  - Giá trị thấp = gần (tiền cảnh)
+
+**Độ chính xác:** Tương đối tốt trên ảnh thực tế
+
+**Giới hạn:**
+- Là relative depth, không metric depth
+- Có thể sai trên vật thể trong suốt, bóng đổ
+
+### 2.3 Identity Preserver (AnyDoor) - Giữ nhân dạng
+
+**Bản chất:** Mô hình Reference-Guided Generation
+
+**Chức năng:** Đảm bảo vật thể không bị biến dạng, giữ nguyên nhân dạng gốc
+
+**Cơ chế:**
+1. **Encoding:** Mã hóa ảnh tham chiếu thành feature vector $F_{ref}$
+2. **Injection:** Tiêm $F_{ref}$ vào quá trình sinh ảnh của U-Net
+3. **Ép buộc:** U-Net phải sử dụng $F_{ref}$, nên kết quả giữ nguyên nhân dạng
+
+**Lợi ích:**
+- Vật thể không méo mó, biến hình
+- Giữ lại chi tiết gốc
+- Hỗ trợ vật phức tạp
+
+### 2.4 VAE Encoder/Decoder - Cầu nối
+
+**Bản chất:** Variational Autoencoder
+
+**Chức năng:**
+- **Encoder:** Ảnh (hàng triệu giá trị) → latent space (hàng trăm giá trị)
+- **Decoder:** Latent space → ảnh để hiển thị
+
+**Tại sao cần:**
+- Giảm chi phí tính toán 4-8 lần
+- Tập trung vào đặc trưng quan trọng
+- Tăng tốc độ sinh ảnh
+
+---
+
+## 3. KIẾN TRÚC HỆ THỐNG (SYSTEM ARCHITECTURE)
+
+Hệ thống hoạt động theo quy trình **tuần tự 2 bước chính.**
+
+### 3.1 Bước 1: DeGLaD (Depth-Guided Layer Decomposition)
+
+**Chức năng:** Tách ảnh thành các lớp không gian dựa trên độ sâu
+
+#### Quy trình chi tiết
+
+**Input:**
+- Ảnh gốc (RGB)
+- Bản đồ độ sâu (từ MiDaS)
+- Ngưỡng độ sâu $d$ (chọn bởi người dùng)
+
+**Bước 1: Ước lượng Depth Map**
+```
+depth_map = MiDaS(rgb_image)  # Kết quả 0-1 hoặc 0-255
+```
+
+**Bước 2: Tạo mặt nạ**
+```
+mask_foreground = depth_map < d       # Pixels gần hơn ngưỡng
+mask_background = depth_map >= d      # Pixels xa hơn ngưỡng
+```
+
+**Bước 3: Tách lớp**
+```
+layer_fg = rgb_image * mask_foreground
+layer_bg = rgb_image * mask_background
+```
+
+**Bước 4: Inpainting lỗ thủng**
+- Lớp Hậu cảnh có "lỗ đen" ở nơi Tiền cảnh che khuất
+- Kích hoạt mô hình Inpainting để vẽ bù
+- Sử dụng Diffusion inpainting hoặc CNN inpainting
+
+**Output:**
+- Layer Tiền cảnh (sạch, sẵn sàng chỉnh sửa)
+- Layer Hậu cảnh (sạch, không lỗ)
+
+#### Ưu điểm
+
+✅ **Đơn giản:** Chỉ cần thresholds  
+✅ **Nhanh:** Toàn xử lý nguyên lý học  
+✅ **Điều chỉnh dễ:** Người dùng chọn ngưỡng
+
+#### Hạn chế
+
+❌ **Phụ thuộc Depth Map:** Nếu depth sai → kết quả sai  
+❌ **Cạnh cứng:** Ranh giới tiền/hậu cảnh bị sắc  
+❌ **Occlusion edge:** Khó xử lý cạnh mỏng, tóc
+
+### 3.2 Bước 2: FeatGLaC (Feature-Guided Layer Compositing)
+
+**Chức năng:** Ghép các lớp lại thành ảnh hoàn chỉnh với ánh sáng tự nhiên
+
+#### Vấn đề với Alpha Blending
+
+Ghép chồng pixel đơn giản:
+```
+output = fg * alpha + bg * (1 - alpha)
+```
+
+**Kết quả tồi:**
+- Viền sắc ngoặc
+- Ánh sáng không ăn nhập
+- Bóng đổ không tự nhiên
+
+#### Giải pháp: Feature Injection
+
+**Thay vì ghép pixel, can thiệp vào bộ não (U-Net)** của mô hình Diffusion
+
+**Kiến trúc hai nhánh:**
+
+**Nhánh 1 - Guidance Branch:**
+```
+input_layers = [layer_fg, layer_bg]
+↓
+VAE Encoder → Latent vectors
+↓
+Guidance U-Net → xử lý
+↓
+Internal Features: K (Key), V (Value)
+  K = cấu trúc hình học
+  V = thông tin màu sắc
+```
+
+**Nhánh 2 - Generation Branch:**
+```
+noise_z ~ N(0, 1)
+↓
+Generation U-Net (T bước khử nhiễu)
+  At each step t:
+    Inject K, V vào Self-Attention layers
+    → Ép buộc sinh ảnh tuân theo cấu trúc guidance
+↓
+VAE Decoder → Ảnh cuối cùng
+```
+
+#### Tại sao hoạt động tốt?
+
+1. **K (Geometric Structure):** Cấu trúc ảnh sinh giống hệt layers đã tách
+2. **V (Appearance):** Giữ lại màu sắc và chi tiết gốc
+3. **Self-Attention Injection:** Ánh sáng AI tự động cân chỉnh (không pixel cứng nhắc)
+4. **Diffusion Process:** Qua nhiều bước, các không nhất quán được giải quyết tự nhiên
+
+#### Công thức toán học
+
+$$\text{Attention}(Q, K_{\text{guided}}, V_{\text{guided}}) = \text{softmax}\left(\frac{QK_{\text{guided}}^T}{\sqrt{d}}\right)V_{\text{guided}}$$
+
+Thay thế $K$ và $V$ gốc bằng các từ nhánh hướng dẫn.
+
+---
+
+## 4. TRIỂN KHAI HỆ THỐNG BIG DATA (IMPLEMENTATION)
+
+Cách áp dụng thuật toán để xử lý **10GB dữ liệu** (~25,000 ảnh) trên Kaggle.
+
+### 4.1 Thách thức & Khắc phục
+
+| Thách thức | Nguyên nhân | Giải pháp |
+|-----------|----------|---------|
+| 10GB không vào RAM | RAM 32GB, CPU cũng cần không gian | Streaming DataLoader - batch 32 ảnh |
+| Xử lý tuần tự quá lâu | 1 GPU × 2.5s × 25K = 70+ giờ | Data Parallelism - 2 GPU T4 |
+| Mô hình 1.5B params | GPU 16GB VRAM, mô hình cần ~6GB | Batch nhỏ (32), Mixed Precision FP16 |
+| Lưu 25K ảnh output | Dung lượng ~20-30GB | Write liên tục, không giữ RAM |
+
+### 4.2 Kiến trúc Batch Processing Pipeline
+
+#### Lớp 1: Data Storage
+
+**Input gốc:** Video 4K tự quay
+
+**Tiền xử lý:**
+1. Cắt video thành frame (1 frame/0.1s)
+2. Kết quả: ~25,000 ảnh PNG/JPEG
+3. Lợi ích: Dữ liệu lớn, chất lượng cao, đồng nhất
+
+#### Lớp 2: Data Controller
+
+**Chức năng:** Quản lý luồng dữ liệu disk → RAM → GPU
+
+**Thành phần:**
+
+1. **File Manager:** Quét 25,000 ảnh, tạo danh sách
+2. **DataLoader:** Nạp cuốn chiếu
+   - 1 batch = 32 ảnh vào RAM
+   - Sau xử lý, xóa khỏi RAM → nạp batch tiếp
+   - Memory: ~500MB-1GB/lúc
+3. **Preprocessing:**
+   - Resize về 512×512 hoặc 768×768
+   - Normalize (0-1 hoặc -1 to 1)
+   - Chuẩn bị tensor
+
+**Code logic:**
+```
+for batch in DataLoader(images, batch_size=32):
+    process(batch)
+    save_results(batch)
+    del batch  # Giải phóng RAM
+```
+
+#### Lớp 3: Compute Cluster
+
+**Cấu hình:**
+- 2 × NVIDIA T4 (16GB VRAM mỗi)
+- 8-core CPU
+- 32GB system RAM
+
+**Chia việc:**
+```
+batch = [img1, img2, ..., img32]
+  ↓
+Split:
+  Part 1 (16 ảnh) → GPU 0
+  Part 2 (16 ảnh) → GPU 1
+  ↓
+GPU 0 & GPU 1: DeGLaD + FeatGLaC (song song)
+  ↓
+Synchronize → kết quả gom
+```
+
+**Tốc độ:**
+- 1 ảnh = ~2.5 giây
+- 2 GPU song song = ~1.25 giây/ảnh (lý tưởng)
+- Thực tế: ~1.8 giây/ảnh
+- **Tổng:** 25,000 × 1.8s ÷ 3600 ≈ **12-14 giờ**
+
+**Workflow trên mỗi GPU:**
+```
+for each image in batch:
+    1. Load image → tensor
+    
+    2. DeGLaD:
+       - Depth = MiDaS(image)
+       - Mask_fg = depth < threshold
+       - Layer_fg, Layer_bg = separate(image, mask)
+       - Layer_bg = Inpaint(layer_bg)
+    
+    3. FeatGLaC:
+       - Guidance_feats = Guidance_UNet(layer_fg, layer_bg)
+       - Output = Generation_UNet_with_Injection(guidance_feats)
+    
+    4. Save output
+```
+
+#### Lớp 4: Aggregation & Evaluation
+
+**Đầu vào:** 25,000 ảnh output
+
+**Bước 1: Validation**
+```
+Check file size, format, dimension
+Skip corrupted files
+```
+
+**Bước 2: Metric Calculation (RMSE)**
+```
+For each image:
+    predicted_depth = MiDaS(output_image)
+    true_depth = ground_truth[image_id]
+    rmse = sqrt(mean((predicted - true)^2))
+    
+Final_RMSE = mean(all_rmse)
+```
+
+**Bước 3: Visualization**
+- Biểu đồ RMSE qua image
+- Histogram RMSE
+- Top-K worst/best cases
+
+### 4.3 Cấu hình Phần cứng & Tối ưu
+
+| Thành phần | Chi tiết | Tác dụng |
+|-----------|---------|---------|
+| **GPU** | 2× T4 (16GB VRAM) | Xử lý DNN |
+| **CPU** | 8-core Xeon | Data loading |
+| **RAM** | 32GB DDR4 | Buffer |
+| **Storage** | 100GB NVMe SSD | Input/Output |
+| **Batch Size** | 32 | Cân bằng memory/throughput |
+| **DataLoader Workers** | 8 | Parallel loading |
+| **Mixed Precision** | FP16 | Giảm memory 2×, tăng tốc 1.5-2× |
+| **Processing Time** | ~12-14 giờ | Thời gian thực tế |
+
+### 4.4 Tóm tắt luồng dữ liệu
+
+```
+1. Video 4K
+   ↓
+2. Frame Extraction (25,000 ảnh)
+   ↓
+3. DataLoader (batch=32)
+   ↓
+4. GPU-0: DeGLaD+FeatGLaC (16) | GPU-1: DeGLaD+FeatGLaC (16)
+   ↓                             ↓
+5. Merge results
+   ↓
+6. Save to SSD (~20-30GB)
+   ↓
+7. Metric Calculation (RMSE)
+   ↓
+8. Report & Visualization
+```
+
+---
+
+## 5. HÀM MẤT MÁT & HỌC (LOSS FUNCTIONS)
+
+> **Lưu ý:** Zero-Shot (Inference-Only) → không training trực tiếp. Tuy nhiên mô hình pre-train với:
+
+### 5.1 Noise Prediction Loss (MSE)
+
+$$\mathcal{L}_{denoise} = \mathbb{E}_{x_0, t, \epsilon} \left[\|\epsilon - \epsilon_\theta(x_t, t)\|_2^2\right]$$
+
+**Ý nghĩa:** Mô hình học dự đoán lớp nhiễu được thêm vào ảnh tại thời điểm $t$.
+
+### 5.2 Perceptual Loss (LPIPS)
+
 $$\mathcal{L}_{perceptual} = \sum_l \frac{1}{N_l} \sum_{h,w} \|F_l(x) - F_l(y)\|_2^2$$
 
-- Thường dùng trong AnyDoor/Autoencoder
-- **Ý nghĩa:** Đảm bảo ảnh sinh ra nhìn "thật" và giống ảnh gốc về mặt tri giác của mắt người
+**Ý nghĩa:** So sánh ở mức đặc trưng (không phải pixel). Đảm bảo ảnh sinh "thật" theo tri giác con người.
 
-#### **3. Feature Matching Loss**
+### 5.3 Feature Matching Loss
+
 $$\mathcal{L}_{feat-match} = \|F_{ref} - F_{generated}\|_2$$
 
-- **Ý nghĩa:** Ép buộc đặc trưng của vật thể được ghép khớp với đặc trưng của vật thể mẫu ban đầu
+**Ý nghĩa:** Ép buộc đặc trưng vật thể giữ nguyên, không méo mó.
 
+### 5.4 Reconstruction Loss (L1/L2)
 
----
+$$\mathcal{L}_{recon} = \|x_{0} - \hat{x}_{0}\|_1$$
 
-## 3. Kiến Trúc Hệ Thống (System Architecture)
-
-Hệ thống được chia làm **2 Module chính** xử lý tuần tự:
-
-```
-DeGLaD (Tách) ──→ FeatGLaC (Ghép)
-```
-
-### Module 1: DeGLaD (Depth-Guided Layer Decomposition)
-
-**Chức năng:** Tách ảnh đầu vào thành các lớp không gian (Layers) dựa trên độ sâu
-
-**Logic xử lý:**
-
-1. Dùng mô hình (MiDaS) **ước lượng độ sâu** ảnh
-2. Người dùng **chọn ngưỡng độ sâu $d$** (ví dụ: vị trí cái bàn)
-3. **Tách ảnh thành:**
-   - **Tiền cảnh:** Độ sâu < $d$ (gần hơn)
-   - **Hậu cảnh:** Độ sâu > $d$ (xa hơn)
-4. **Quan trọng:** Khi tách Tiền cảnh ra, Hậu cảnh sẽ bị **thủng một lỗ**
-   - Module này tự động dùng **AI Inpainting** để vẽ bù vào lỗ đó
-
-### Module 2: FeatGLaC (Feature-Guided Layer Compositing)
-
-**Chức năng:** Ghép các lớp lại thành ảnh hoàn chỉnh sao cho ánh sáng và bóng đổ **tự nhiên**
-
-**Logic xử lý:**
-
-1. **KHÔNG ghép chồng pixel** (Alpha Blending) vì sẽ lộ viền
-2. **Sử dụng cơ chế Feature Injection** trong mạng U-Net
-3. **Guidance Branch:** Chạy song song để trích xuất cấu trúc $(K, V)$ từ các lớp Tiền/Hậu cảnh
-4. **Generation Branch:** 
-   - Sinh ảnh mới
-   - Bị ép buộc phải tuân theo cấu trúc $(K, V)$ của nhánh hướng dẫn
-
+**Ý nghĩa:** Ảnh khôi phục gần với ảnh gốc.
 
 ---
 
-## 4. Ứng Dụng vào Dự Án Big Data (Implementation)
+## 6. TÓM TẮT & KỲ VỌNG
 
-Phần này mô tả việc **mở rộng** mô hình trên (chỉ chạy 1 ảnh) thành một **dây chuyền xử lý 10GB dữ liệu** trên Kaggle.
+### Ưu điểm
 
-### Quy Trình Xử Lý Batch (Batch Processing Pipeline)
+✅ **Zero-Shot:** Không cần huấn luyện mô hình mới  
+✅ **3D-Aware:** Xử lý occlusion, phối cảnh đúng  
+✅ **Ánh sáng tự nhiên:** Feature Injection tự động điều chỉnh  
+✅ **Mở rộng:** Áp dụng trên các tác vụ khác
 
-Sử dụng kiến trúc **Data Parallelism** (Song song dữ liệu)
+### Hạn chế
 
-#### **Bước 1: Thu thập & Tiền xử lý (Storage)**
+❌ **Phụ thuộc depth map:** Depth sai → kết quả sai  
+❌ **Tốc độ:** 2.5s/ảnh  
+❌ **Tài nguyên:** GPU ≥16GB VRAM  
+❌ **Chi tiết nhỏ:** Có thể lose tóc, cạnh mỏng
 
-- **Thay vì tải ảnh lẻ tẻ**, nhóm sử dụng **Video 4K tự quay**
-- Dùng script Python (OpenCV) **cắt video thành 25,000 ảnh tĩnh**
-- **Lợi ích:**
-  - ✅ Dữ liệu lớn
-  - ✅ Chất lượng cao
-  - ✅ Đồng nhất
+### Hướng phát triển
 
-#### **Bước 2: Phân phối (Controller)**
-
-- Dữ liệu 10GB **không thể nạp hết vào RAM**
-- Sử dụng **DataLoader** để nạp cuốn chiếu (Streaming):
-  - Nạp 32 ảnh → Xử lý → Xóa khỏi RAM → Nạp 32 ảnh tiếp
-
-#### **Bước 3: Xử lý Song song (Workers)**
-
-- **Môi trường:** Kaggle cung cấp **2 GPU T4**
-- **Thuật toán:** DataParallel tự động chia đôi Batch
-  - 16 ảnh → GPU 1
-  - 16 ảnh → GPU 2
-- **Thực hiện:** Mỗi GPU thực hiện trọn vẹn **DeGLaD + FeatGLaC** cho phần ảnh của mình
-- **Tốc độ:** ~2.5s/ảnh × 25,000 ảnh ÷ 2 GPUs ≈ **14 giờ** (với overhead)
-
-#### **Bước 4: Tổng hợp (Reducer)**
-
-- **Kết quả output** được ghi liên tục xuống ổ cứng
-- Sau khi chạy xong toàn bộ:
-  - Script cuối cùng quét toàn bộ ảnh kết quả
-  - Tính toán **sai số (RMSE)**
-  - Vẽ biểu đồ **đánh giá kết quả**
+🔮 **Depth Improvement:** ZoeDepth, Metric Depth  
+🔮 **Speed Optimization:** Quantization, distillation  
+🔮 **Generalization:** Video editing (frame-consistent)  
+🔮 **User Control:** Interactive UI điều chỉnh threshold
 
 ---
 
-## 📊 Tóm Tắt Pipeline
+## Tài liệu tham khảo
 
-| Bước | Thành Phần | Chức Năng |
-|------|-----------|----------|
-| 1 | Video Input | Quay 4K video gốc |
-| 2 | Frame Extraction | Cắt video → 25,000 ảnh |
-| 3 | Depth Estimation | MiDaS ước lượng độ sâu |
-| 4 | DeGLaD | Tách lớp theo depth |
-| 5 | Inpainting | Vẽ bù lỗ thủng |
-| 6 | FeatGLaC | Ghép lớp mượt mà |
-| 7 | Output | Ảnh chỉnh sửa 3D-aware |
-| 8 | Evaluation | RMSE + Biểu đồ |
-
-
+- Parihar et al., ICCV 2025
+- Rombach et al., CVPR 2022  
+- Xia et al., arXiv 2023 (AnyDoor)
+- MiDaS, ZoeDepth

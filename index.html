@@ -318,49 +318,89 @@
             <div class="section-content">
                 <h2>Các Thành Phần Cốt Lõi</h2>
                 <p style="text-align: center; color: #7f8c8d; font-size: 0.95rem; margin-bottom: 2rem;">
-                    Ba module chính trong hệ thống
+                    Ba module chính trong hệ thống (ấn ◄ ► để xem)
                 </p>
 
-                <!-- Module 1: Latent Diffusion -->
-                <div class="diagram-box" style="margin-bottom: 3rem;">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Latent Diffusion Model</h3>
-                    <div class="mermaid">
-                        graph LR
-                        A["Đầu vào: Nhiễu<br/>(Latent Space)"] --> B["Quá trình<br/>Khử nhiễu"] --> C["Trích xuất<br/>Đặc trưng"] --> D["Đầu ra:<br/>Ảnh"]
+                <!-- Carousel Container -->
+                <div style="position: relative; max-width: 1400px; margin: 0 auto;">
+                    <div id="modelCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px;">
                         
-                        style A fill:#e8e8e8,stroke:#666,stroke-width:2px
-                        style B fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style C fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style D fill:#b8b8b8,stroke:#666,stroke-width:2px
-                    </div>
-                </div>
+                        <!-- Slide 1: Latent Diffusion -->
+                        <div style="min-width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; margin-right: 1rem; min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">1. Latent Diffusion Model</h3>
+                            <div class="mermaid" style="font-size: 12px;">
+                                graph LR
+                                A["Input<br/>Noise"] --> B["Timesteps<br/>T→1"]
+                                B --> C["Encoder<br/>Text"] --> D["U-Net<br/>Denoise"]
+                                D --> E["Attention"] --> F["Scheduler<br/>DDPM"]
+                                F --> G["Integrate<br/>Step t"]
+                                G --> H{"t=0?"}
+                                H -->|No| B
+                                H -->|Yes| I["VAE<br/>Decoder"] --> J["Image<br/>Output"]
+                                
+                                style A fill:#f0f0f0,stroke:#666,stroke-width:2px
+                                style B fill:#e8e8e8,stroke:#666,stroke-width:2px
+                                style C fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style D fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style E fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style F fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style G fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style I fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style J fill:#b8b8b8,stroke:#333,stroke-width:2px
+                            </div>
+                        </div>
 
-                <!-- Module 2: Depth Estimator -->
-                <div class="diagram-box" style="margin-bottom: 3rem;">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Depth Estimation Module</h3>
-                    <div class="mermaid">
-                        graph LR
-                        A["Đầu vào: Ảnh<br/>RGB"] --> B["MiDaS /<br/>ZoeDepth"] --> C["Xử lý"] --> D["Đầu ra: Bản đồ<br/>Độ sâu"]
-                        
-                        style A fill:#e8e8e8,stroke:#666,stroke-width:2px
-                        style B fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style C fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style D fill:#b8b8b8,stroke:#666,stroke-width:2px
-                    </div>
-                </div>
+                        <!-- Slide 2: Depth Estimation -->
+                        <div style="min-width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; margin-right: 1rem; min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">2. Depth Estimation Module</h3>
+                            <div class="mermaid" style="font-size: 12px;">
+                                graph LR
+                                A["RGB<br/>Input"] --> B["Normalize"] --> C["CNN<br/>Backbone"]
+                                C --> D["Multi-Scale"] --> E["Decoder"]
+                                E --> F["Upsample<br/>×32"] --> G["Median<br/>Filter"]
+                                G --> H["Bilateral<br/>Filter"] --> I["Normalize"] --> J["Depth<br/>Map"]
+                                
+                                style A fill:#f0f0f0,stroke:#666,stroke-width:2px
+                                style B fill:#e8e8e8,stroke:#666,stroke-width:2px
+                                style C fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style D fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style E fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style F fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style G fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style H fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style I fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style J fill:#b8b8b8,stroke:#333,stroke-width:2px
+                            </div>
+                        </div>
 
-                <!-- Module 3: Identity Preserver -->
-                <div class="diagram-box">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Identity Preserver (AnyDoor)</h3>
-                    <div class="mermaid">
-                        graph LR
-                        A["Vật thể<br/>Tham chiếu"] --> B["Bộ mã hóa<br/>AnyDoor"] --> C["Vector<br/>Đặc trưng"] --> D["Đầu ra: Đặc trưng<br/>Bảo toàn"]
-                        
-                        style A fill:#e8e8e8,stroke:#666,stroke-width:2px
-                        style B fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style C fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style D fill:#b8b8b8,stroke:#666,stroke-width:2px
+                        <!-- Slide 3: Identity Preserver -->
+                        <div style="min-width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
+                            <div class="mermaid" style="font-size: 12px;">
+                                graph LR
+                                A["Ref<br/>Object"] --> B["Crop<br/>ROI"] --> C["Normalize"]
+                                C --> D["Backbone"] --> E["Global<br/>Pool"]
+                                E --> F["Dense<br/>512D"] --> G["L2<br/>Norm"]
+                                G --> H["Vector<br/>v∈ℝ512"] --> I["Similarity"] --> J["Store<br/>Features"] --> K["Identity<br/>Preserved"]
+                                
+                                style A fill:#f0f0f0,stroke:#666,stroke-width:2px
+                                style B fill:#e8e8e8,stroke:#666,stroke-width:2px
+                                style C fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style D fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style E fill:#d0d0d0,stroke:#666,stroke-width:2px
+                                style F fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style G fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style H fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style I fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style J fill:#c0c0c0,stroke:#666,stroke-width:2px
+                                style K fill:#b8b8b8,stroke:#333,stroke-width:2px
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Navigation Buttons -->
+                    <button id="modelPrev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: #2c3e50; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">◄</button>
+                    <button id="modelNext" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #2c3e50; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">►</button>
                 </div>
             </div>
         </section>
@@ -371,10 +411,10 @@
                 <h2>Kiến Trúc Hệ Thống</h2>
                 
                 <!-- DIAGRAM 1: DeGLaD -->
-                <div class="diagram-box" style="padding: 1rem;">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.5rem; font-size: 0.95rem;">DeGLaD: Depth-Guided Layer Decomposition</h3>
-                    <div class="mermaid">
-                        graph TD
+                <div class="diagram-box" style="padding: 0.6rem; overflow-x: auto;">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.2rem; font-size: 0.85rem;">DeGLaD: Depth-Guided Layer Decomposition</h3>
+                    <div class="mermaid" style="font-size: 11px;">
+                        graph LR
                         subgraph INPUTS ["Đầu vào"]
                             A["Ảnh gốc I"]
                             B["Depth Map Z"]
@@ -408,9 +448,9 @@
                 </div>
 
                 <!-- DIAGRAM 2: FeatGLaC -->
-                <div class="diagram-box" style="padding: 0.6rem; overflow-x: auto;">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.2rem; font-size: 0.85rem;">FeatGLaC: Feature-Guided Layer Compositing</h3>
-                    <div class="mermaid" style="font-size: 13px;">
+                <div class="diagram-box" style="padding: 0.3rem; overflow-x: auto;">
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.1rem; font-size: 0.75rem;">FeatGLaC: Feature-Guided Layer Compositing</h3>
+                    <div class="mermaid" style="font-size: 11px;">
                         graph LR
                         subgraph INPUTS ["Inputs"]
                             FG["Foreground Layer"]
@@ -460,55 +500,58 @@
             <div class="section-content">
                 <h2>Triển Khai Big Data</h2>
                 <div class="solution-box" style="margin-bottom: 2rem;">
-                    <h3><i class="fa-solid fa-server"></i> Chiến lược Xử lý</h3>
-                    <p>Mở rộng mô hình để xử lý <strong>Dataset >10GB</strong> (~25,000 ảnh) trên Kaggle bằng kiến trúc Song song dữ liệu (Data Parallelism).</p>
+                    <h3>Chiến lược Xử lý dữ liệu lớn</h3>
+                    <p>Mở rộng mô hình để xử lý <strong>Dataset >10GB</strong> (~25,000 ảnh) trên Kaggle bằng kiến trúc <strong>Xử lý song song dữ liệu (Data Parallelism)</strong> trên GPU T4 x2.</p>
                 </div>
 
                 <div class="diagram-box">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 1rem;">Big Data Pipeline: Parallel Processing</h3>
-                    <div class="mermaid">
-                        graph TD
-                        subgraph STORAGE ["Data Storage"]
-                            A["4K Video"]
-                            B["Frame Extraction"]
-                            C["25K Images<br/>~10GB Dataset"]
-                        end
+                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Big Data Pipeline: Xử lý song song trên GPU</h3>
+                    <div class="mermaid" style="font-size: 12px;">
+                        graph LR
+                        A["Video<br/>4K"] --> B["Frame<br/>Extract"]
+                        B --> C["25K Img<br/>~10GB"]
+                        C --> D["File List &<br/>DataLoader"]
+                        D --> E["Batch<br/>Div=32"]
+                        E --> F["GPU-0<br/>Worker"]
+                        E --> G["GPU-1<br/>Worker"]
+                        F --> H["DeGLaD +<br/>FeatGLaC"]
+                        G --> I["DeGLaD +<br/>FeatGLaC"]
+                        H --> J["Merge &<br/>Save"]
+                        I --> J
+                        J --> K["Metric<br/>RMSE"]
                         
-                        subgraph CONTROL ["Data Controller"]
-                            D["File List"]
-                            E["DataLoader<br/>Streaming"]
-                            F["Batch Division<br/>Size=32"]
-                        end
-                        
-                        subgraph WORKERS ["Compute Workers - GPU T4 x2"]
-                            G1["GPU-0<br/>Worker"]
-                            G2["GPU-1<br/>Worker"]
-                            PROC["DeGLaD<br/>+ FeatGLaC"]
-                        end
-                        
-                        subgraph OUTPUT ["Aggregation"]
-                            H["Save Results"]
-                            I["Calculate RMSE"]
-                        end
-                        
-                        A --> B
-                        B --> C
-                        C --> D
-                        D --> E
-                        E --> F
-                        F --> G1
-                        F --> G2
-                        G1 --> PROC
-                        G2 --> PROC
-                        PROC --> H
-                        H --> I
-                        
-                        style STORAGE fill:#f5f5f5,stroke:#666,stroke-width:2px
-                        style CONTROL fill:#e8e8e8,stroke:#666,stroke-width:2px
-                        style G1 fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style G2 fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style PROC fill:#c0c0c0,stroke:#333,stroke-width:2px
-                        style OUTPUT fill:#b8b8b8,stroke:#333,stroke-width:2px
+                        style A fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style B fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style C fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style D fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style E fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style F fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style G fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style H fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style I fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style J fill:#d8d8d8,stroke:#666,stroke-width:2px
+                        style K fill:#d8d8d8,stroke:#333,stroke-width:2px
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                    <div class="solution-box">
+                        <h4>Cấu hình Phần cứng</h4>
+                        <ul style="list-style-position: inside; line-height: 1.8;">
+                            <li><strong>GPU:</strong> 2x NVIDIA T4 (16GB VRAM mỗi)</li>
+                            <li><strong>CPU:</strong> 8-core Intel Xeon</li>
+                            <li><strong>RAM:</strong> 32GB DDR4</li>
+                            <li><strong>Storage:</strong> 100GB NVMe SSD</li>
+                        </ul>
+                    </div>
+                    <div class="solution-box">
+                        <h4>Tối ưu Xử lý</h4>
+                        <ul style="list-style-position: inside; line-height: 1.8;">
+                            <li><strong>Batch Size:</strong> 32 per GPU</li>
+                            <li><strong>Data Loader:</strong> 8 workers</li>
+                            <li><strong>Mixed Precision:</strong> FP16 training</li>
+                            <li><strong>Processing Time:</strong> ~45 phút/epoch</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -555,24 +598,41 @@
         // Keyboard Navigation cho Card Container
         document.addEventListener('keydown', (e) => {
             const modelSection = document.getElementById('model');
-            const cardContainer = modelSection?.querySelector('.card-container');
+            const carousel = modelSection?.querySelector('#modelCarousel');
             
-            if (!cardContainer || !modelSection.offsetParent) return;
+            if (!carousel || !modelSection.offsetParent) return;
             
             // Kiểm tra nếu đang ở phần Model
             const modelRect = modelSection.getBoundingClientRect();
             if (modelRect.top > window.innerHeight || modelRect.bottom < 0) return;
             
-            const scrollAmount = 400;
+            const scrollAmount = window.innerWidth - 100;
             
             if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                cardContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                cardContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
             }
         });
+
+        // Carousel Navigation Buttons
+        const modelCarousel = document.getElementById('modelCarousel');
+        const modelPrev = document.getElementById('modelPrev');
+        const modelNext = document.getElementById('modelNext');
+
+        if (modelCarousel && modelPrev && modelNext) {
+            const scrollAmount = window.innerWidth - 100;
+
+            modelPrev.addEventListener('click', () => {
+                modelCarousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            });
+
+            modelNext.addEventListener('click', () => {
+                modelCarousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            });
+        }
     </script>
 </body>
 </html>
