@@ -21,6 +21,224 @@ Nguồn tài liệu: Parihar et al., "Zero-Shot Depth-Aware Image Editing with D
 
 ---
 
+## 0.1 CHI TIẾT: LATENT SPACE (Không gian tiềm ẩn)
+
+### Khái niệm cơ bản
+
+Hình ảnh bình thường ở **pixel space:**
+- Ảnh 512×512×3 = **786,432 giá trị pixel** (R, G, B)
+- Mỗi giá trị 0-255
+- Khó học vì dữ liệu quá lớn
+
+**Latent Space** = không gian nén lại:
+- Ảnh 512×512 → nén thành **64×64×4 = 16,384 giá trị** (roughly 48 lần nhỏ hơn)
+- Giữ lại thông tin quan trọng, bỏ chi tiết không cần
+- Mô hình học nhanh, tiêu tốn memory ít
+
+### Cách hoạt động
+
+**VAE Encoder (Mã hóa):**
+```
+Ảnh 512×512×3 (786K values)
+    ↓
+CNN layers (conv, pooling, residual blocks)
+    ↓
+Bottleneck layer → gaussian distribution
+    ↓
+Latent vector 64×64×4 (16K values)
+```
+
+**VAE Decoder (Giải mã):**
+```
+Latent vector 64×64×4
+    ↓
+Transposed CNN (upsampling, conv)
+    ↓
+Ảnh 512×512×3
+```
+
+### Tại sao quan trọng?
+
+1. **Tốc độ:** Diffusion model tạo tiếng ồn trong latent space (nhanh 8x)
+2. **Memory:** Lưu 16K giá trị thay vì 786K (tiết kiệm VRAM)
+3. **Chất lượng:** Mô hình học đặc trưng thay vì chi tiết pixel vô nghĩa
+4. **Linh hoạt:** Có thể dùng cùng một latent space cho nhiều task
+
+**Ví dụ thực tế:**
+- Stable Diffusion: sử dụng VAE để làm việc ở latent space
+- Khiến mô hình chỉ cần ~1.5 tỷ tham số thay vì 10+ tỷ
+
+---
+
+## 0.2 CHI TIẾT: SELF-ATTENTION (Cơ chế tự chú ý)
+
+### Khái niệm cơ bản
+
+**Self-Attention** = cách AI xác định "điểm ảnh nào quan trọng với nhau"
+
+Ví dụ trong câu tiếng Anh:
+```
+"The dog saw the cat and it ran away"
+     ↑                        ↑
+  Từ "it" nên chú ý tới từ "dog" (không phải "cat")
+```
+
+Tương tự, trong ảnh:
+```
+Khi vẽ chi tiết mắt mèo → chú ý tới pixel mắt + vùng xung quanh
+Không cần chú ý tới background (cây, bầu trời)
+```
+
+### Cơ chế toán học
+
+$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
+
+**Ba thành phần:**
+
+1. **Query (Q):** "Tôi đang xử lý pixel nào?"
+2. **Key (K):** "Pixel khác nào liên quan?"
+3. **Value (V):** "Lấy thông tin gì từ pixel liên quan?"
+
+**Ví dụ cụ thể:**
+
+```
+Input: Ảnh 64×64×256 channels (từ CNN layer)
+
+Step 1: Tạo Q, K, V từ feature map
+  Q = Linear_Q(feature_map)    # 4096×256 → 4096×64
+  K = Linear_K(feature_map)    # 4096×256 → 4096×64
+  V = Linear_V(feature_map)    # 4096×256 → 4096×256
+
+Step 2: Tính sự tương đồng
+  scores = Q @ K^T             # 4096×4096 (mỗi pixel với tất cả pixel khác)
+
+Step 3: Chuẩn hóa
+  weights = softmax(scores)    # Tổng bằng 1 mỗi dòng
+
+Step 4: Trích thông tin
+  output = weights @ V         # 4096×256 (thông tin có trọng số)
+```
+
+### Tại sao quan trọng trong bài toán này?
+
+**Trong FeatGLaC** (Feature-Guided Layer Compositing):
+
+```
+Original U-Net Self-Attention:
+  Attention(Q, K, V) 
+  ↓
+  Tạo ảnh dựa vào noise + diffusion timestep
+
+Modified (Feature Injection):
+  Attention(Q, K_guided, V_guided)
+  ↓
+  Ép buộc tạo ảnh tuân theo cấu trúc layers được tách
+```
+
+**Kết quả:** 
+- Model tự động điều chỉnh ánh sáng, bóng đổ
+- Không cần hard merge giữa tiền/hậu cảnh
+- Ánh sáng tự nhiên vì diffusion process tự khôi phục harmonic
+
+---
+
+## 0.3 CHI TIẾT: FEATURE INJECTION (Tiêm đặc trưng)
+
+### Khái niệm cơ bản
+
+**Feature Injection** = can thiệp vào quá trình tính toán của mô hình để ép nó tuân theo một cấu trúc
+
+Ví dụ trong đời sống:
+```
+Bình thường: Máy tự vẽ ảnh tự do
+Với injection: "Hãy vẽ nhưng bắt buộc phải có cái cây ở góc trái"
+```
+
+### Cách hoạt động trong FeatGLaC
+
+**Bước 1: Chuẩn bị Guidance Features**
+
+```
+Tiền cảnh Layer + Hậu cảnh Layer
+    ↓
+VAE Encoder → Latent representations
+    ↓
+Guidance U-Net (mô hình phụ)
+    ↓
+Trích features từ mỗi attention layer
+    K_fg, V_fg = from foreground
+    K_bg, V_bg = from background
+```
+
+**Bước 2: Injection vào Generation U-Net**
+
+```
+Diffusion loop (t = T đến 0):
+    ↓
+  noise_t = model(z_t, t, text_prompt)  ← bình thường
+  ↓
+  Tại mỗi Self-Attention layer:
+    
+    Q_gen = from generation U-Net (tính bình thường)
+    K_gen, V_gen = bình thường
+    
+    Thay thế:
+    K_gen ← blend(K_fg, K_bg)  ← dùng guidance features!
+    V_gen ← blend(V_fg, V_bg)
+    
+    output = Attention(Q_gen, K_gen_injected, V_gen_injected)
+```
+
+**Bước 3: Kết quả**
+
+```
+output = DecoderUNet(...)
+    ↓
+VAE Decoder → ảnh cuối cùng
+    ↓
+Ảnh với:
+  ✅ Cấu trúc giống tiền/hậu cảnh
+  ✅ Ánh sáng tự động cân chỉnh
+  ✅ Chi tiết mượt mà (không cạnh cứng)
+```
+
+### Tại sao hoạt động tốt?
+
+1. **Self-Attention** học "mối quan hệ toàn cảnh"
+   - Biết ánh sáng nên từ đâu
+   - Biết bóng đổ nên ở chỗ nào
+   
+2. **Diffusion Process** = lặp 50 bước khử nhiễu
+   - Không làm một lần (kiểu hard merge)
+   - Từ từ điều chỉnh, các chi tiết không nhất quán tự khôi phục
+
+3. **Feature Injection** = soft constraint
+   - Không bắt buộc tuân theo 100% (sẽ cứng, giả tạo)
+   - Ép buộc nhưng để mô hình linh hoạt điều chỉnh
+
+### Ví dụ thực tế
+
+**Chèn ghế vào ảnh phòng:**
+
+```
+Tiền cảnh: Cái bàn
+Hậu cảnh: Tường, cửa, sàn
+
+Bình thường (hard merge):
+  Ghế dán lên bàn → nó trông sáng bất thường (không bóng)
+
+Với Feature Injection:
+  1. Guidance features nói: "Đây là vùng bàn, vùng tường"
+  2. Generation U-Net sinh ghế nhưng inject guidance
+  3. Self-Attention layers tự động:
+     - Ghế ở phía sau bàn (occlusion)
+     - Ánh sáng từ cửa → ghế tối phía một
+     - Bóng đổ hợp lý trên sàn
+  4. Kết quả: tự nhiên, không cần post-processing
+```
+
+---
+
 ## 1. PHÂN TÍCH VẤN ĐỀ (PROBLEM STATEMENT)
 
 ### 1.1 Vấn đề hiện tại

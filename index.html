@@ -317,10 +317,7 @@
         <section id="model">
             <div class="section-content">
                 <h2>Các Thành Phần Cốt Lõi</h2>
-                <p style="text-align: center; color: #7f8c8d; font-size: 0.95rem; margin-bottom: 2rem;">
-                    Ba module chính trong hệ thống (ấn ◄ ► để xem)
-                </p>
-
+               
                 <!-- Carousel Container -->
                 <div style="position: relative; max-width: 1400px; margin: 0 auto;">
                     <div id="modelCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px;">
@@ -330,23 +327,55 @@
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">1. Latent Diffusion Model</h3>
                             <div class="mermaid" style="font-size: 12px;">
                                 graph LR
-                                A["Input<br/>Noise"] --> B["Timesteps<br/>T→1"]
-                                B --> C["Encoder<br/>Text"] --> D["U-Net<br/>Denoise"]
-                                D --> E["Attention"] --> F["Scheduler<br/>DDPM"]
-                                F --> G["Integrate<br/>Step t"]
-                                G --> H{"t=0?"}
-                                H -->|No| B
-                                H -->|Yes| I["VAE<br/>Decoder"] --> J["Image<br/>Output"]
-                                
-                                style A fill:#f0f0f0,stroke:#666,stroke-width:2px
-                                style B fill:#e8e8e8,stroke:#666,stroke-width:2px
-                                style C fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style D fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style E fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style F fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style G fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style I fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style J fill:#b8b8b8,stroke:#333,stroke-width:2px
+    subgraph INPUTS [Inputs]
+        I["Scene Image"]
+        Ref["Reference Object"]
+        D_Thres["Depth Threshold d"]
+    end
+
+    subgraph PREP ["Preprocessing & DeGLaD"]
+        DepthEst["Depth Estimator"]
+        DeGLaD["DeGLaD: Depth-Guided<br/>Layer Decomposition"]
+        VAE_Enc["VAE Encoder"]
+        Ref_Enc["Reference Encoder<br/>(AnyDoor)"]
+    end
+
+    subgraph DIFFUSION ["Depth-Aware Diffusion Loop"]
+        Noise["Input Noise"]
+        UNet["U-Net Inpainting"]
+        Blend["Latent Blending"]
+        Scheduler["DDPM Scheduler"]
+        Loop{"t=0?"}
+    end
+
+    subgraph OUTPUT [Output]
+        VAE_Dec["VAE Decoder"]
+        Img_Out["Output Image"]
+    end
+
+    %% Preprocessing Data Flow
+    I --> DepthEst --> DeGLaD
+    D_Thres --> DeGLaD
+    DeGLaD -- "Foreground Mask M_fg" --> Blend
+    DeGLaD -- "Background Mask M_bg" --> Blend
+    
+    I --> VAE_Enc -- "Source Latent z_source" --> Blend
+    Ref --> Ref_Enc -- "Reference Features" --> UNet
+
+    %% Diffusion Flow
+    Noise --> UNet
+    UNet --> Scheduler
+    Scheduler -- "Inpainted Latent" --> Blend
+    
+    %% Blending Process (Core Contribution)
+    Blend -- "Blended Latent z_t-1" --> Loop
+    Loop -- "No (t-1)" --> UNet
+    Loop -- "Yes" --> VAE_Dec --> Img_Out
+
+    %% Styling
+    style DeGLaD fill:#f96,stroke:#333,stroke-width:2px
+    style Blend fill:#ff9,stroke:#333,stroke-width:2px,stroke-dasharray: 5, 5
+    style Ref_Enc fill:#bbf,stroke:#333
                             </div>
                         </div>
 
@@ -355,21 +384,26 @@
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">2. Depth Estimation Module</h3>
                             <div class="mermaid" style="font-size: 12px;">
                                 graph LR
-                                A["RGB<br/>Input"] --> B["Normalize"] --> C["CNN<br/>Backbone"]
-                                C --> D["Multi-Scale"] --> E["Decoder"]
-                                E --> F["Upsample<br/>×32"] --> G["Median<br/>Filter"]
-                                G --> H["Bilateral<br/>Filter"] --> I["Normalize"] --> J["Depth<br/>Map"]
-                                
-                                style A fill:#f0f0f0,stroke:#666,stroke-width:2px
-                                style B fill:#e8e8e8,stroke:#666,stroke-width:2px
-                                style C fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style D fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style E fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style F fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style G fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style H fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style I fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style J fill:#b8b8b8,stroke:#333,stroke-width:2px
+    subgraph PREP ["Preprocessing"]
+        A["Input Image (RGB)<br/>(H, W)"] --> B["Resize & Normalize<br/>(518, 518)"]
+    end
+
+    subgraph MODEL ["Depth Anything Model"]
+        B --> C["Encoder: DINOv2<br/>(Vision Transformer)"]
+        C --> D["DPT Decoder<br/>(Feature Fusion)"]
+        D --> E["Raw Depth Output<br/>(518, 518)"]
+    end
+
+    subgraph POST ["Post-processing"]
+        E --> F["Bilinear Interpolation<br/>(Resize to H, W)"]
+        F --> G["Normalize (0-255)"]
+        G --> H["Depth Map<br/>(Grayscale)"]
+    end
+
+    %% Styling
+    style C fill:#add8e6,stroke:#333,stroke-width:2px
+    style D fill:#add8e6,stroke:#333,stroke-width:2px
+    style H fill:#90ee90,stroke:#333,stroke-width:2px
                             </div>
                         </div>
 
@@ -378,22 +412,43 @@
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
                             <div class="mermaid" style="font-size: 12px;">
                                 graph LR
-                                A["Ref<br/>Object"] --> B["Crop<br/>ROI"] --> C["Normalize"]
-                                C --> D["Backbone"] --> E["Global<br/>Pool"]
-                                E --> F["Dense<br/>512D"] --> G["L2<br/>Norm"]
-                                G --> H["Vector<br/>v∈ℝ512"] --> I["Similarity"] --> J["Store<br/>Features"] --> K["Identity<br/>Preserved"]
-                                
-                                style A fill:#f0f0f0,stroke:#666,stroke-width:2px
-                                style B fill:#e8e8e8,stroke:#666,stroke-width:2px
-                                style C fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style D fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style E fill:#d0d0d0,stroke:#666,stroke-width:2px
-                                style F fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style G fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style H fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style I fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style J fill:#c0c0c0,stroke:#666,stroke-width:2px
-                                style K fill:#b8b8b8,stroke:#333,stroke-width:2px
+    subgraph INPUT ["Inputs"]
+        Ref["Reference Image<br/>(Target Object)"]
+        Tgt["Background Image<br/>+ Mask"]
+    end
+
+    subgraph EXTRACTOR ["ID & Detail Extractor"]
+        Ref --> DINO["DINOv2 Encoder<br/>(Semantics & Shape)"]
+        Ref --> HF["High-Frequency Filter<br/>(Texture & Details)"]
+        DINO --> Feat_Sem["Semantic Features"]
+        HF --> Feat_Det["Detail Map"]
+    end
+
+    subgraph INJECTOR ["Feature Injection"]
+        Feat_Sem --> Fusion["Feature Fusion<br/>& Adapter"]
+        Feat_Det --> Fusion
+        Fusion --> Control["Identity-Preserving<br/>Control Signal"]
+    end
+
+    subgraph GENERATOR ["Stable Diffusion U-Net"]
+        Tgt --> VAE["VAE Encoder"]
+        VAE --> Latent["Noised Latent"]
+        Latent --> UNet["U-Net Denoising"]
+        Control --> UNet
+        UNet --> OutLatent["Inpainted Latent"]
+    end
+    
+    subgraph OUTPUT ["Output"]
+        OutLatent --> Dec["VAE Decoder"]
+        Dec --> Res["Final Result"]
+    end
+
+    %% Styling
+    style Ref fill:#f9f,stroke:#333
+    style DINO fill:#add8e6,stroke:#333
+    style HF fill:#add8e6,stroke:#333
+    style UNet fill:#ff9,stroke:#333,stroke-width:2px
+    style Res fill:#90ee90,stroke:#333,stroke-width:2px
                             </div>
                         </div>
                     </div>
@@ -415,35 +470,36 @@
                     <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.2rem; font-size: 0.85rem;">DeGLaD: Depth-Guided Layer Decomposition</h3>
                     <div class="mermaid" style="font-size: 11px;">
                         graph LR
-                        subgraph INPUTS ["Đầu vào"]
-                            A["Ảnh gốc I"]
-                            B["Depth Map Z"]
-                            MASK["Mask M"]
-                        end
-                        
-                        subgraph DECOMP_PROC ["Xử lý tách lớp"]
-                            VAE["VAE Encoder"]
-                            NORM["Normalize<br/>Depth"]
-                            DECOMP["Layer Decomposition<br/>Network"]
-                        end
-                        
-                        subgraph OUTPUTS ["Đầu ra"]
-                            FG["Lớp Foreground"]
-                            BG["Lớp Background"]
-                        end
-                        
-                        A --> VAE
-                        B --> NORM
-                        MASK --> NORM
-                        VAE --> DECOMP
-                        NORM --> DECOMP
-                        DECOMP --> FG
-                        DECOMP --> BG
-                        
-                        style INPUTS fill:#f0f0f0,stroke:#666,stroke-width:2px
-                        style DECOMP_PROC fill:#e8e8e8,stroke:#666,stroke-width:2px
-                        style OUTPUTS fill:#d0d0d0,stroke:#666,stroke-width:2px
-                        style DECOMP fill:#c0c0c0,stroke:#333,stroke-width:2px
+    subgraph INPUTS ["Inputs"]
+        D_Map["Depth Map Z"]
+        Thres["Depth Threshold d<br/>(User Input)"]
+        Latent["Source Latent z"]
+    end
+    
+    subgraph LOGIC ["Layer Decomposition Logic (Zero-Shot)"]
+        Compare{"Compare:<br/>Z < d ?"}
+        Morph["Morphological Ops<br/>(Erosion/Dilation)"]
+    end
+    
+    subgraph MASKS ["Output Masks"]
+        Mfg["Foreground Mask M_fg<br/>(Preserve)"]
+        Mbg["Background Mask M_bg<br/>(Inpaint)"]
+    end
+    
+    %% Processing Flow
+    D_Map --> Compare
+    Thres --> Compare
+    
+    Compare -- "Yes (Closer)" --> Mfg
+    Compare -- "No (Farther)" --> Mbg
+    
+    Mfg --> Morph
+    Mbg --> Morph
+    
+    %% Styling
+    style LOGIC fill:#fff4e6,stroke:#f96,stroke-width:2px
+    style MASKS fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
+    style Compare shape:rhombus
                     </div>
                 </div>
 
