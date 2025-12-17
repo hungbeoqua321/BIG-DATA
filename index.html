@@ -327,55 +327,77 @@
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">1. Latent Diffusion Model</h3>
                             <div class="mermaid" style="font-size: 12px;">
                                 graph LR
-    subgraph INPUTS [Inputs]
+    %% --- KHỐI 1: INPUTS & PREP (Xếp chồng dọc) ---
+    subgraph SETUP ["1. INPUTS & ENCODERS"]
+        direction TB
+        
+        %% Hàng 1: Dữ liệu thô
         I["Scene Image"]
-        Ref["Reference Object"]
-        D_Thres["Depth Threshold d"]
-    end
-
-    subgraph PREP ["Preprocessing & DeGLaD"]
+        Ref["Ref Object"]
+        D_Thres["Threshold d"]
+        
+        %% Hàng 2: Các bộ Encoder
         DepthEst["Depth Estimator"]
-        DeGLaD["DeGLaD: Depth-Guided<br/>Layer Decomposition"]
+        Ref_Enc["Ref Encoder<br/>(AnyDoor)"]
         VAE_Enc["VAE Encoder"]
-        Ref_Enc["Reference Encoder<br/>(AnyDoor)"]
+        
+        %% Định vị nội bộ để ép xếp dọc
+        I --> DepthEst
+        I --> VAE_Enc
+        Ref --> Ref_Enc
     end
 
-    subgraph DIFFUSION ["Depth-Aware Diffusion Loop"]
+    %% --- KHỐI 2: PROCESS CORE (Xếp chồng dọc) ---
+    subgraph PROCESS ["2. DIFFUSION LOOP"]
+        direction TB
+        
+        %% Phần xử lý Mask
+        DeGLaD["DeGLaD<br/>(Logic Tách lớp)"]
+        
+        %% Phần vòng lặp sinh ảnh
         Noise["Input Noise"]
-        UNet["U-Net Inpainting"]
+        UNet["U-Net Inpaint"]
+        Scheduler["Scheduler"]
         Blend["Latent Blending"]
-        Scheduler["DDPM Scheduler"]
-        Loop{"t=0?"}
+        Loop{"Xong chưa?<br/>(t=0)"}
+        
+        %% Luồng xử lý nội bộ
+        Noise --> UNet
+        UNet --> Scheduler
+        Scheduler --> Blend
+        Blend --> Loop
+        Loop -- "Chưa (t-1)" --> UNet
     end
 
-    subgraph OUTPUT [Output]
+    %% --- KHỐI 3: OUTPUT (Xếp chồng dọc) ---
+    subgraph RESULT ["3. OUTPUT"]
+        direction TB
         VAE_Dec["VAE Decoder"]
-        Img_Out["Output Image"]
+        Img_Out["Final Image"]
+        
+        VAE_Dec --> Img_Out
     end
 
-    %% Preprocessing Data Flow
-    I --> DepthEst --> DeGLaD
+    %% --- KẾT NỐI GIỮA CÁC KHỐI LỚN ---
+    %% Input bắn sang Process
+    DepthEst --> DeGLaD
     D_Thres --> DeGLaD
-    DeGLaD -- "Foreground Mask M_fg" --> Blend
-    DeGLaD -- "Background Mask M_bg" --> Blend
     
-    I --> VAE_Enc -- "Source Latent z_source" --> Blend
-    Ref --> Ref_Enc -- "Reference Features" --> UNet
+    DeGLaD -- "Mask Fg/Bg" --> Blend
+    VAE_Enc -- "Latent Gốc" --> Blend
+    Ref_Enc -- "Features" --> UNet
 
-    %% Diffusion Flow
-    Noise --> UNet
-    UNet --> Scheduler
-    Scheduler -- "Inpainted Latent" --> Blend
+    %% Process bắn sang Output
+    Loop -- "Rồi (Yes)" --> VAE_Dec
+
+    %% --- ĐỊNH DẠNG MÀU SẮC (High Contrast) ---
+    style SETUP fill:#fff8dc,stroke:#daa520,stroke-width:2px,color:#000
+    style PROCESS fill:#e6f7ff,stroke:#0099ff,stroke-width:2px,color:#000
+    style RESULT fill:#f0fff0,stroke:#3cb371,stroke-width:2px,color:#000
     
-    %% Blending Process (Core Contribution)
-    Blend -- "Blended Latent z_t-1" --> Loop
-    Loop -- "No (t-1)" --> UNet
-    Loop -- "Yes" --> VAE_Dec --> Img_Out
-
-    %% Styling
-    style DeGLaD fill:#f96,stroke:#333,stroke-width:2px
-    style Blend fill:#ff9,stroke:#333,stroke-width:2px,stroke-dasharray: 5, 5
-    style Ref_Enc fill:#bbf,stroke:#333
+    style UNet fill:#ffcc99,stroke:#333,color:#000
+    style Blend fill:#ffff99,stroke:#333,stroke-dasharray: 5, 5,color:#000
+    style DeGLaD fill:#ffcc00,stroke:#333,color:#000
                             </div>
                         </div>
 
