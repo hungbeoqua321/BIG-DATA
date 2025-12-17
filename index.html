@@ -473,11 +473,11 @@
     subgraph INPUTS ["Inputs"]
         D_Map["Depth Map Z"]
         Thres["Depth Threshold d<br/>(User Input)"]
-        Latent["Source Latent z"]
+        Latent["Source Latent Z"]
     end
     
     subgraph LOGIC ["Layer Decomposition Logic (Zero-Shot)"]
-        Compare{"Compare:<br/>Z > d ?"}
+        Compare["Compare"]
         Morph["Morphological Ops<br/>(Erosion/Dilation)"]
     end
     
@@ -490,8 +490,8 @@
     D_Map --> Compare
     Thres --> Compare
     
-    Compare -- "Yes (Closer)" --> Mfg
-    Compare -- "No (Farther)" --> Mbg
+    Compare -- "z < d" --> Mfg
+    Compare -- "z > d" --> Mbg
     
     Mfg --> Morph
     Mbg --> Morph
