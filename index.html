@@ -517,7 +517,7 @@
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
                             <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="depthestimation.png" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Depth Estimation">
+                                <img src="depth.jpg" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Depth Estimation">
                             </div>
                         </div>
 
@@ -546,59 +546,6 @@
     style C fill:#add8e6,stroke:#333,stroke-width:2px
     style D fill:#add8e6,stroke:#333,stroke-width:2px
     style H fill:#90ee90,stroke:#333,stroke-width:2px
-                            </div>
-                        </div>
-
-                        <!-- Slide 5: Identity Preserver Image -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
-                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="anydoor.png" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="AnyDoor">
-                            </div>
-                        </div>
-
-                        <!-- Slide 6: Identity Preserver Diagram -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
-                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
-                                graph LR
-    subgraph INPUT ["Inputs"]
-        Ref["Reference Image<br/>(Target Object)"]
-        Tgt["Background Image<br/>+ Mask"]
-    end
-
-    subgraph EXTRACTOR ["ID & Detail Extractor"]
-        Ref --> DINO["DINOv2 Encoder<br/>(Semantics & Shape)"]
-        Ref --> HF["High-Frequency Filter<br/>(Texture & Details)"]
-        DINO --> Feat_Sem["Semantic Features"]
-        HF --> Feat_Det["Detail Map"]
-    end
-
-    subgraph INJECTOR ["Feature Injection"]
-        Feat_Sem --> Fusion["Feature Fusion<br/>& Adapter"]
-        Feat_Det --> Fusion
-        Fusion --> Control["Identity-Preserving<br/>Control Signal"]
-    end
-
-    subgraph GENERATOR ["Stable Diffusion U-Net"]
-        Tgt --> VAE["VAE Encoder"]
-        VAE --> Latent["Noised Latent"]
-        Latent --> UNet["U-Net Denoising"]
-        Control --> UNet
-        UNet --> OutLatent["Inpainted Latent"]
-    end
-    
-    subgraph OUTPUT ["Output"]
-        OutLatent --> Dec["VAE Decoder"]
-        Dec --> Res["Final Result"]
-    end
-
-    %% Styling
-    style Ref fill:#f9f,stroke:#333
-    style DINO fill:#add8e6,stroke:#333
-    style HF fill:#add8e6,stroke:#333
-    style UNet fill:#ff9,stroke:#333,stroke-width:2px
-    style Res fill:#90ee90,stroke:#333,stroke-width:2px
                             </div>
                         </div>
                     </div>
