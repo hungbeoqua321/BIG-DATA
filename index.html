@@ -249,7 +249,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <div class="logo">Zero-Shot <span>Editing</span></div>
+            <div class="logo">Depth - <span>Aware</span></div>
             <nav>
                 <ul>
                     <li><a href="#paper">Vấn đề</a></li>
@@ -315,96 +315,92 @@
 
         <!-- SECTION 2: MÔ HÌNH -->
         <section id="model">
-            <div class="section-content">
+            <div class="section-content" style="max-width: 100%; width: 100%;">
                 <h2>Các Thành Phần Cốt Lõi</h2>
                
                 <!-- Carousel Container -->
-                <div style="position: relative; max-width: 1400px; margin: 0 auto;">
-                    <div id="modelCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px;">
+                <div style="position: relative; max-width: 100%; width: 100%; margin: 0 auto;">
+                    <div id="modelCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px; gap: 1rem;">
                         
-                        <!-- Slide 1: Latent Diffusion -->
-                        <div style="min-width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; margin-right: 1rem; min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">1. Latent Diffusion Model</h3>
-                            <div class="mermaid" style="font-size: 12px;">
-                                graph LR
-    %% --- KHỐI 1: INPUTS & PREP (Xếp chồng dọc) ---
-    subgraph SETUP ["1. INPUTS & ENCODERS"]
-        direction TB
-        
-        %% Hàng 1: Dữ liệu thô
-        I["Scene Image"]
-        Ref["Ref Object"]
-        D_Thres["Threshold d"]
-        
-        %% Hàng 2: Các bộ Encoder
-        DepthEst["Depth Estimator"]
-        Ref_Enc["Ref Encoder<br/>(AnyDoor)"]
-        VAE_Enc["VAE Encoder"]
-        
-        %% Định vị nội bộ để ép xếp dọc
-        I --> DepthEst
-        I --> VAE_Enc
-        Ref --> Ref_Enc
-    end
-
-    %% --- KHỐI 2: PROCESS CORE (Xếp chồng dọc) ---
-    subgraph PROCESS ["2. DIFFUSION LOOP"]
-        direction TB
-        
-        %% Phần xử lý Mask
-        DeGLaD["DeGLaD<br/>(Logic Tách lớp)"]
-        
-        %% Phần vòng lặp sinh ảnh
-        Noise["Input Noise"]
-        UNet["U-Net Inpaint"]
-        Scheduler["Scheduler"]
-        Blend["Latent Blending"]
-        Loop{"Xong chưa?<br/>(t=0)"}
-        
-        %% Luồng xử lý nội bộ
-        Noise --> UNet
-        UNet --> Scheduler
-        Scheduler --> Blend
-        Blend --> Loop
-        Loop -- "Chưa (t-1)" --> UNet
-    end
-
-    %% --- KHỐI 3: OUTPUT (Xếp chồng dọc) ---
-    subgraph RESULT ["3. OUTPUT"]
-        direction TB
-        VAE_Dec["VAE Decoder"]
-        Img_Out["Final Image"]
-        
-        VAE_Dec --> Img_Out
-    end
-
-    %% --- KẾT NỐI GIỮA CÁC KHỐI LỚN ---
-    %% Input bắn sang Process
-    DepthEst --> DeGLaD
-    D_Thres --> DeGLaD
-    
-    DeGLaD -- "Mask Fg/Bg" --> Blend
-    VAE_Enc -- "Latent Gốc" --> Blend
-    Ref_Enc -- "Features" --> UNet
-
-    %% Process bắn sang Output
-    Loop -- "Rồi (Yes)" --> VAE_Dec
-
-    %% --- ĐỊNH DẠNG MÀU SẮC (High Contrast) ---
-    style SETUP fill:#fff8dc,stroke:#daa520,stroke-width:2px,color:#000
-    style PROCESS fill:#e6f7ff,stroke:#0099ff,stroke-width:2px,color:#000
-    style RESULT fill:#f0fff0,stroke:#3cb371,stroke-width:2px,color:#000
-    
-    style UNet fill:#ffcc99,stroke:#333,color:#000
-    style Blend fill:#ffff99,stroke:#333,stroke-dasharray: 5, 5,color:#000
-    style DeGLaD fill:#ffcc00,stroke:#333,color:#000
+                        <!-- Slide 1: Latent Diffusion Image -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Latent Diffusion Model</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
+                                <img src="diffusionmodel.png" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Diffusion Model">
                             </div>
                         </div>
 
-                        <!-- Slide 2: Depth Estimation -->
-                        <div style="min-width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; margin-right: 1rem; min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">2. Depth Estimation Module</h3>
-                            <div class="mermaid" style="font-size: 12px;">
+                        <!-- Slide 2: Latent Diffusion Diagram -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Latent Diffusion Model</h3>
+                            <div class="mermaid" style="font-size: 14px;">
+                                flowchart LR
+    %% --- KHỐI 1: INPUTS (Giữ nguyên) ---
+    subgraph INPUTS ["1. INPUTS & ENCODERS"]
+        direction TB
+        RefObj["Ref Object"] --> RefEnc["Ref Encoder<br/>(AnyDoor)"]
+        Scene["Scene Image"] --> Depth["Depth Estimator"]
+        Scene --> VAE["VAE Encoder"]
+        Thres["Threshold d"]
+    end
+
+    %% --- KHỐI 2: DIFFUSION LOOP (SỬA LẠI HOÀN TOÀN) ---
+    subgraph LOOP ["2. DEPTH-AWARE DIFFUSION LOOP"]
+        direction LR
+        
+        %% Các node trong vòng lặp
+        InputNoise["Input Noise (z_T)"]
+        UNet["U-Net Inpaint"]
+        Scheduler["Scheduler"]
+        Blending["Latent Blending<br/>(Trộn Source & Gen)"]
+        Check{"Xong chưa?<br/>(t=0)"}
+        
+        %% Luồng xử lý tuần tự (Sequential Flow)
+        InputNoise --> UNet
+        UNet -- "Nhiễu dự đoán" --> Scheduler
+        Scheduler -- "Latent tạm (z_pred)" --> Blending
+        Blending -- "Latent đã trộn (z_t-1)" --> Check
+        
+        %% Mũi tên quay đầu (Feedback Loop)
+        Check -- "Chưa (No)" --> UNet
+    end
+
+    %% --- KHỐI 3: OUTPUT (Giữ nguyên) ---
+    subgraph OUT ["3. OUTPUT"]
+        VAE_Dec["VAE Decoder"] --> Final["Final Image"]
+    end
+
+    %% --- KẾT NỐI GIỮA CÁC KHỐI ---
+    RefEnc -- "Features" --> UNet
+    Depth --> DeGLaD["DeGLaD"]
+    Thres --> DeGLaD
+    VAE -- "Source Latent" --> Blending
+    
+    %% DeGLaD cung cấp Mask cho Blending
+    DeGLaD -- "Mask Fg/Bg" --> Blending
+    
+    %% Kết thúc vòng lặp
+    Check -- "Rồi (Yes)" --> VAE_Dec
+
+    %% --- STYLING ---
+    style LOOP fill:#e6f7ff,stroke:#0099ff,stroke-width:2px
+    style Blending fill:#ffff99,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5
+    style DeGLaD fill:#ffcc00,stroke:#333
+                            </div>
+                        </div>
+
+                        <!-- Slide 3: Depth Estimation Image -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
+                                <img src="depthestimation.png" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Depth Estimation">
+                            </div>
+                        </div>
+
+                        <!-- Slide 4: Depth Estimation Diagram -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
+                            <div class="mermaid" style="font-size: 14px;">
                                 graph LR
     subgraph PREP ["Preprocessing"]
         A["Input Image (RGB)<br/>(H, W)"] --> B["Resize & Normalize<br/>(518, 518)"]
@@ -429,10 +425,18 @@
                             </div>
                         </div>
 
-                        <!-- Slide 3: Identity Preserver -->
-                        <div style="min-width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 70vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
-                            <div class="mermaid" style="font-size: 12px;">
+                        <!-- Slide 5: Identity Preserver Image -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
+                                <img src="anydoor.png" style="max-width: 80%; height: auto; border-radius: 8px;" alt="AnyDoor">
+                            </div>
+                        </div>
+
+                        <!-- Slide 6: Identity Preserver Diagram -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
+                            <div class="mermaid" style="font-size: 14px;">
                                 graph LR
     subgraph INPUT ["Inputs"]
         Ref["Reference Image<br/>(Target Object)"]
@@ -475,6 +479,14 @@
                         </div>
                     </div>
 
+                    <!-- Navigation -->
+                    <div style="text-align: center; margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
+                        <button onclick="document.getElementById('modelCarousel').scrollBy({left: -(window.innerWidth + 16), behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">◄ Trước</button>
+                        <span style="color: #666; font-size: 0.9rem;">LDM Image • LDM Diagram • Depth Image • Depth Diagram • AnyDoor Image • AnyDoor Diagram</span>
+                        <button onclick="document.getElementById('modelCarousel').scrollBy({left: window.innerWidth + 16, behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">Sau ►</button>
+                    </div>
+                </div>
+
                 </div>
             </div>
         </section>
@@ -483,28 +495,39 @@
         <section id="arch">
             <div class="section-content">
                 <h2>Kiến Trúc Hệ Thống</h2>
-                
-                <!-- DIAGRAM 1: DeGLaD -->
-                <div class="diagram-box" style="padding: 0.6rem; overflow-x: auto;">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.2rem; font-size: 0.85rem;">DeGLaD: Depth-Guided Layer Decomposition</h3>
-                    <div class="mermaid" style="font-size: 11px;">
-                        graph LR
+               
+                <!-- Carousel Container -->
+                <div style="position: relative; max-width: 100%; width: 100%; margin: 0 auto;">
+                    <div id="archCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px; gap: 1rem;">
+                        
+                        <!-- Slide 1: DeGLaD Image -->
+                        <div style="width: 100%; flex-shrink: 0; scroll-snap-align: start; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">a) DeGLaD: Depth-Guided Layer Decomposition</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
+                                <img src="deglad.jpg" style="max-width: 80%; height: auto; border-radius: 8px;" alt="DeGLaD Diagram">
+                            </div>
+                        </div>
+
+                        <!-- Slide 2: DeGLaD Diagram -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">a) DeGLaD: Flow Diagram</h3>
+                            <div class="mermaid" style="font-size: 14px;">
+graph LR
     subgraph INPUTS ["Inputs"]
         D_Map["Depth Map Z"]
-        Thres["Depth Threshold d<br/>(User Input)"]
+        Thres["Threshold d"]
     end
     
-    subgraph LOGIC ["Layer Decomposition Logic (Zero-Shot)"]
+    subgraph LOGIC ["Layer Decomposition"]
         Compare["Compare"]
-        Morph["Morphological Ops<br/>(Erosion/Dilation)"]
+        Morph["Morphological Ops"]
     end
     
     subgraph MASKS ["Output Masks"]
-        Mfg["Foreground Mask M_fg<br/>(Preserve)"]
-        Mbg["Background Mask M_bg<br/>(Inpaint)"]
+        Mfg["Foreground Mask M_fg"]
+        Mbg["Background Mask M_bg"]
     end
     
-    %% Processing Flow
     D_Map --> Compare
     Thres --> Compare
     
@@ -514,10 +537,17 @@
     Mfg --> Morph
     Mbg --> Morph
     
-    %% Styling
     style LOGIC fill:#fff4e6,stroke:#f96,stroke-width:2px
     style MASKS fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-    style Compare shape:rhombus
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <div style="text-align: center; margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
+                        <button onclick="document.getElementById('archCarousel').scrollBy({left: -(window.innerWidth + 16), behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">◄ Trước</button>
+                        <span style="color: #666; font-size: 0.9rem;">Image • Diagram</span>
+                        <button onclick="document.getElementById('archCarousel').scrollBy({left: window.innerWidth + 16, behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">Sau ►</button>
                     </div>
                 </div>
 
@@ -669,44 +699,42 @@
             });
         });
 
-        // Keyboard Navigation cho Card Container
+        // Keyboard Navigation cho Carousels
         document.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+            
             const modelSection = document.getElementById('model');
-            const carousel = modelSection?.querySelector('#modelCarousel');
+            const archSection = document.getElementById('arch');
+            const scrollAmount = window.innerWidth + 16;
             
-            if (!carousel || !modelSection.offsetParent) return;
+            let carousel = null;
             
-            // Kiểm tra nếu đang ở phần Model
-            const modelRect = modelSection.getBoundingClientRect();
-            if (modelRect.top > window.innerHeight || modelRect.bottom < 0) return;
+            // Check Model Section
+            if (modelSection?.offsetParent) {
+                const modelRect = modelSection.getBoundingClientRect();
+                if (modelRect.top <= window.innerHeight && modelRect.bottom >= 0) {
+                    carousel = modelSection.querySelector('#modelCarousel');
+                }
+            }
             
-            const scrollAmount = window.innerWidth - 100;
+            // Check Architecture Section
+            if (!carousel && archSection?.offsetParent) {
+                const archRect = archSection.getBoundingClientRect();
+                if (archRect.top <= window.innerHeight && archRect.bottom >= 0) {
+                    carousel = archSection.querySelector('#archCarousel');
+                }
+            }
+            
+            if (!carousel) return;
+            
+            e.preventDefault();
             
             if (e.key === 'ArrowRight') {
-                e.preventDefault();
                 carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
             } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
                 carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
             }
         });
-
-        // Carousel Navigation Buttons
-        const modelCarousel = document.getElementById('modelCarousel');
-        const modelPrev = document.getElementById('modelPrev');
-        const modelNext = document.getElementById('modelNext');
-
-        if (modelCarousel && modelPrev && modelNext) {
-            const scrollAmount = window.innerWidth - 100;
-
-            modelPrev.addEventListener('click', () => {
-                modelCarousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-            });
-
-            modelNext.addEventListener('click', () => {
-                modelCarousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            });
-        }
     </script>
 </body>
 </html>
