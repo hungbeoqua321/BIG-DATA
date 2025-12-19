@@ -296,10 +296,10 @@
         }
 
         .modal-mermaid svg {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
         }
 
         .modal-close {
@@ -435,7 +435,7 @@
                         <!-- Slide 2: Latent Diffusion Diagram -->
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Latent Diffusion Model</h3>
-                            <div class="mermaid" style="font-size: 14px;">
+                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
                                 flowchart LR
     %% Làm mượt đường nối
     linkStyle default interpolation basis
@@ -469,7 +469,7 @@
         direction LR
         
         %% DeGLaD nằm giữa làm cầu nối
-        DeGLaD["DeGLaD<br/>(Tách lớp)"]
+        DeGLaD["DeGLaD"]
 
         %% Vòng lặp chính
         subgraph LOOP ["Depth-Aware Loop"]
@@ -872,9 +872,22 @@ graph LR
                 modalContent.innerHTML = '';
                 modalContent.appendChild(img);
             } else {
-                // For Mermaid diagrams
-                modalContent.innerHTML = '<div class="modal-mermaid">' + content + '</div>';
-                mermaid.contentLoaded();
+                // For Mermaid diagrams - fix SVG sizing
+                const wrapper = document.createElement('div');
+                wrapper.className = 'modal-mermaid';
+                wrapper.innerHTML = content;
+                
+                // Remove width/height constraints from SVG to let it scale
+                const svg = wrapper.querySelector('svg');
+                if (svg) {
+                    svg.removeAttribute('width');
+                    svg.removeAttribute('height');
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                }
+                
+                modalContent.innerHTML = '';
+                modalContent.appendChild(wrapper);
             }
             
             modal.classList.add('active');
