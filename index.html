@@ -287,9 +287,19 @@
             background: white;
             padding: 2rem;
             border-radius: 8px;
-            max-width: 90vw;
-            max-height: 90vh;
+            width: 90vw;
+            height: 90vh;
             overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-mermaid svg {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
         }
 
         .modal-close {
@@ -427,57 +437,79 @@
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Latent Diffusion Model</h3>
                             <div class="mermaid" style="font-size: 14px;">
                                 flowchart LR
-    %% --- KHỐI 1: INPUTS (Giữ nguyên) ---
-    subgraph INPUTS ["1. INPUTS & ENCODERS"]
+    %% Làm mượt đường nối
+    linkStyle default interpolation basis
+
+    %% --- KHỐI 1: INPUTS (Được chia tầng để dây đi thẳng) ---
+    subgraph INPUTS ["1. INPUT PREPARATION"]
         direction TB
-        RefObj["Ref Object"] --> RefEnc["Ref Encoder<br/>(AnyDoor)"]
-        Scene["Scene Image"] --> Depth["Depth Estimator"]
-        Scene --> VAE["VAE Encoder"]
-        Thres["Threshold d"]
+        
+        %% Tầng 1: Xử lý Reference (Thẳng hàng với U-Net)
+        subgraph L1 ["Reference Branch"]
+            direction LR
+            RefObj["Ref Object"] --> RefEnc["Ref Encoder<br/>(AnyDoor)"]
+        end
+
+        %% Tầng 2: Xử lý Depth (Thẳng hàng với DeGLaD)
+        subgraph L2 ["Depth Branch"]
+            direction LR
+            Scene1["Scene Image"] --> Depth["Depth Estimator"]
+            Thres["Threshold d"]
+        end
+
+        %% Tầng 3: Xử lý Latent gốc (Thẳng hàng với Blending)
+        subgraph L3 ["Latent Branch"]
+            direction LR
+            Scene2["Scene Image"] --> VAE["VAE Encoder"]
+        end
     end
 
-    %% --- KHỐI 2: DIFFUSION LOOP (SỬA LẠI HOÀN TOÀN) ---
-    subgraph LOOP ["2. DEPTH-AWARE DIFFUSION LOOP"]
+    %% --- KHỐI 2: LOGIC & LOOP ---
+    subgraph PROCESS ["2. CORE LOGIC"]
         direction LR
         
-        %% Các node trong vòng lặp
-        InputNoise["Input Noise (z_T)"]
-        UNet["U-Net Inpaint"]
-        Scheduler["Scheduler"]
-        Blending["Latent Blending"]
-        Check{"Check"}
-        
-        %% Luồng xử lý tuần tự (Sequential Flow)
-        InputNoise --> UNet
-        UNet -- "Nhiễu dự đoán" --> Scheduler
-        Scheduler -- "Latent tạm (z_pred)" --> Blending
-        Blending -- "Latent đã trộn (z_t-1)" --> Check
-        
-        %% Mũi tên quay đầu (Feedback Loop)
-        Check -- "No" --> UNet
+        %% DeGLaD nằm giữa làm cầu nối
+        DeGLaD["DeGLaD<br/>(Tách lớp)"]
+
+        %% Vòng lặp chính
+        subgraph LOOP ["Depth-Aware Loop"]
+            direction LR
+            InputNoise["Noise"] --> UNet["U-Net"]
+            UNet --> Scheduler["Scheduler"]
+            Scheduler --> Blending["Latent Blending"]
+            Blending --> Check{"Done?"}
+            Check -- "No" --> UNet
+        end
     end
 
-    %% --- KHỐI 3: OUTPUT (Giữ nguyên) ---
-    subgraph OUT ["3. OUTPUT"]
+    %% --- KHỐI 3: OUTPUT ---
+    subgraph OUT ["3. RESULT"]
         VAE_Dec["VAE Decoder"] --> Final["Final Image"]
     end
 
-    %% --- KẾT NỐI GIỮA CÁC KHỐI ---
-    RefEnc -- "Features" --> UNet
-    Depth --> DeGLaD["DeGLaD"]
+    %% --- KẾT NỐI (Dây đi ngang, hạn chế chéo) ---
+    %% Dây trên cùng
+    RefEnc --> UNet
+    
+    %% Dây ở giữa
+    Depth --> DeGLaD
     Thres --> DeGLaD
-    VAE -- "Source Latent" --> Blending
-    
-    %% DeGLaD cung cấp Mask cho Blending
-    DeGLaD -- "Mask Fg/Bg" --> Blending
-    
-    %% Kết thúc vòng lặp
-    Check -- "Rồi (Yes)" --> VAE_Dec
+    DeGLaD -- "Mask" --> Blending
+
+    %% Dây ở dưới
+    VAE --> Blending
+
+    %% Kết thúc
+    Check -- "Yes" --> VAE_Dec
 
     %% --- STYLING ---
-    style LOOP fill:#e6f7ff,stroke:#0099ff,stroke-width:2px
-    style Blending fill:#ffff99,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5
-    style DeGLaD fill:#ffcc00,stroke:#333
+    style INPUTS fill:#fff8dc,stroke:#daa520,color:#000
+    style LOOP fill:#e6f7ff,stroke:#0099ff,stroke-width:2px,color:#000
+    style Blending fill:#ffff99,stroke:#fbc02d,stroke-dasharray: 5 5,color:#000
+    style DeGLaD fill:#ffcc00,stroke:#333,color:#000
+    style L1 fill:#ffffff,stroke:none
+    style L2 fill:#ffffff,stroke:none
+    style L3 fill:#ffffff,stroke:none
                             </div>
                         </div>
 
