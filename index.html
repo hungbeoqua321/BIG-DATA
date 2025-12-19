@@ -242,6 +242,92 @@
             h2 { font-size: 2rem; }
             nav { display: none; } /* Mobile menu simplified */
         }
+
+        /* ===== MODAL / FULLSCREEN ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-img {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .modal-mermaid {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            z-index: 2001;
+            transition: transform 0.2s;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.2);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .clickable-img, .clickable-mermaid {
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+
+        .clickable-img:hover {
+            filter: brightness(1.1);
+        }
+
+        .clickable-mermaid:hover {
+            filter: brightness(0.95);
+        }
     </style>
 </head>
 <body>
@@ -261,6 +347,12 @@
         </div>
     </header>
     <div class="progress-bar"></div>
+
+    <!-- Modal for fullscreen view -->
+    <div id="modal" class="modal">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-content" id="modalContent"></div>
+    </div>
 
     <main>
         <!-- HERO / TOC -->
@@ -326,7 +418,7 @@
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Latent Diffusion Model</h3>
                             <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="diffusionmodel.png" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Diffusion Model">
+                                <img src="diffusionmodel.png" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Diffusion Model">
                             </div>
                         </div>
 
@@ -352,8 +444,8 @@
         InputNoise["Input Noise (z_T)"]
         UNet["U-Net Inpaint"]
         Scheduler["Scheduler"]
-        Blending["Latent Blending<br/>(Trộn Source & Gen)"]
-        Check{"Xong chưa?<br/>(t=0)"}
+        Blending["Latent Blending"]
+        Check{"Check"}
         
         %% Luồng xử lý tuần tự (Sequential Flow)
         InputNoise --> UNet
@@ -362,7 +454,7 @@
         Blending -- "Latent đã trộn (z_t-1)" --> Check
         
         %% Mũi tên quay đầu (Feedback Loop)
-        Check -- "Chưa (No)" --> UNet
+        Check -- "No" --> UNet
     end
 
     %% --- KHỐI 3: OUTPUT (Giữ nguyên) ---
@@ -393,14 +485,14 @@
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
                             <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="depthestimation.png" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Depth Estimation">
+                                <img src="depthestimation.png" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Depth Estimation">
                             </div>
                         </div>
 
                         <!-- Slide 4: Depth Estimation Diagram -->
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
-                            <div class="mermaid" style="font-size: 14px;">
+                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
                                 graph LR
     subgraph PREP ["Preprocessing"]
         A["Input Image (RGB)<br/>(H, W)"] --> B["Resize & Normalize<br/>(518, 518)"]
@@ -429,14 +521,14 @@
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
                             <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="anydoor.png" style="max-width: 80%; height: auto; border-radius: 8px;" alt="AnyDoor">
+                                <img src="anydoor.png" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="AnyDoor">
                             </div>
                         </div>
 
                         <!-- Slide 6: Identity Preserver Diagram -->
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">3. Identity Preserver (AnyDoor)</h3>
-                            <div class="mermaid" style="font-size: 14px;">
+                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
                                 graph LR
     subgraph INPUT ["Inputs"]
         Ref["Reference Image<br/>(Target Object)"]
@@ -504,14 +596,14 @@
                         <div style="width: 100%; flex-shrink: 0; scroll-snap-align: start; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">a) DeGLaD: Depth-Guided Layer Decomposition</h3>
                             <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="deglad.jpg" style="max-width: 80%; height: auto; border-radius: 8px;" alt="DeGLaD Diagram">
+                                <img src="deglad.jpg" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="DeGLaD Diagram">
                             </div>
                         </div>
 
                         <!-- Slide 2: DeGLaD Diagram -->
                         <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
                             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">a) DeGLaD: Flow Diagram</h3>
-                            <div class="mermaid" style="font-size: 14px;">
+                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
 graph LR
     subgraph INPUTS ["Inputs"]
         D_Map["Depth Map Z"]
@@ -734,6 +826,66 @@ graph LR
             } else if (e.key === 'ArrowLeft') {
                 carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
             }
+        });
+
+        // ===== MODAL FUNCTIONS =====
+        function openModal(content, isImage) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modalContent');
+            
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = content;
+                img.className = 'modal-img';
+                modalContent.innerHTML = '';
+                modalContent.appendChild(img);
+            } else {
+                // For Mermaid diagrams
+                modalContent.innerHTML = '<div class="modal-mermaid">' + content + '</div>';
+                mermaid.contentLoaded();
+            }
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside content
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Add click handlers to all images
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('.clickable-img');
+            images.forEach(img => {
+                img.addEventListener('click', function() {
+                    openModal(this.src, true);
+                });
+            });
+
+            // Add click handlers to Mermaid diagrams
+            const mermaidDivs = document.querySelectorAll('.clickable-mermaid');
+            mermaidDivs.forEach(div => {
+                div.addEventListener('click', function() {
+                    const svgContent = this.innerHTML;
+                    openModal(svgContent, false);
+                });
+            });
         });
     </script>
 </body>
