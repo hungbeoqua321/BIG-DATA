@@ -693,30 +693,89 @@ graph LR
                 <div class="diagram-box">
                     <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Big Data Pipeline: Xử lý song song trên GPU</h3>
                     <div class="mermaid" style="font-size: 12px;">
-                        graph LR
-                        A["Video<br/>4K"] --> B["Frame<br/>Extract"]
-                        B --> C["25K Img<br/>~10GB"]
-                        C --> D["File List &<br/>DataLoader"]
-                        D --> E["Batch<br/>Div=32"]
-                        E --> F["GPU-0<br/>Worker"]
-                        E --> G["GPU-1<br/>Worker"]
-                        F --> H["DeGLaD +<br/>FeatGLaC"]
-                        G --> I["DeGLaD +<br/>FeatGLaC"]
-                        H --> J["Merge &<br/>Save"]
-                        I --> J
-                        J --> K["Metric<br/>RMSE"]
-                        
-                        style A fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style B fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style C fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style D fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style E fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style F fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style G fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style H fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style I fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style J fill:#d8d8d8,stroke:#666,stroke-width:2px
-                        style K fill:#d8d8d8,stroke:#333,stroke-width:2px
+                        flowchart TD
+    %% --- BLOCK 1: INPUT ---
+    subgraph IN ["1. INPUT PREPARATION"]
+        SeqFile[("HDFS: Input.seq<br/>(10GB Merged Data)")]
+    end
+
+    %% --- BLOCK 2: MAPREDUCE PROCESS ---
+    subgraph MR ["2. MAP-REDUCE JOB"]
+        direction TB
+        
+        %% SPLITTING
+        subgraph SPLIT_PHASE ["Input Splitting"]
+            direction LR
+            S1["Split 1 (128MB)"]
+            S2["Split 2 (128MB)"]
+            S3["Split 3 (128MB)"]
+        end
+
+        %% MAPPING (PARALLEL)
+        subgraph MAP_PHASE ["MAP PHASE (Image Processing)"]
+            direction LR
+            M1["Mapper Worker 1"]
+            M2["Mapper Worker 2"]
+            M3["Mapper Worker 3"]
+        end
+
+        %% MAPPER LOGIC NOTE
+        MapNote[/"<b>Mapper Logic:</b><br/>1. Decode Bytes -> Image<br/>2. Apply Grayscale/DeGLaD<br/>3. Emit (Filename, ProcessedData)"/]
+
+        %% SHUFFLE & SORT
+        subgraph SHUFFLE_PHASE ["SHUFFLE & SORT"]
+            SS["Network Transfer & Grouping"]
+        end
+
+        %% REDUCING
+        subgraph REDUCE_PHASE ["REDUCE PHASE (Aggregation)"]
+            R1["Reducer Worker"]
+        end
+
+        %% REDUCER LOGIC NOTE
+        RedNote[/"<b>Reducer Logic:</b><br/>1. Receive Processed Imgs<br/>2. Calculate RMSE Metric<br/>3. Write to Output"/]
+
+        %% CONNECTIONS
+        SeqFile --> S1 & S2 & S3
+        S1 --> M1
+        S2 --> M2
+        S3 --> M3
+        
+        M1 & M2 & M3 -.- MapNote
+        M1 & M2 & M3 --> SS
+        SS --> R1
+        R1 -.- RedNote
+    end
+
+    %% --- BLOCK 3: HDFS OUTPUT ---
+    subgraph HDFS_OUT ["3. HDFS OUTPUT"]
+        PartFile[("part-r-00000<br/>(Processed Data + RMSE)")]
+    end
+
+    %% --- BLOCK 4: CLIENT EXTRACTION ---
+    subgraph CLIENT ["4. POST-PROCESSING (Local Client)"]
+        Extract["Java Extractor Tool"]
+        OutImg1["img_001.jpg"]
+        OutImg2["img_002.jpg"]
+        OutMetric["rmse_report.txt"]
+    end
+
+    %% FINAL CONNECTIONS
+    R1 --> PartFile
+    PartFile --> Extract
+    Extract --> OutImg1
+    Extract --> OutImg2
+    Extract --> OutMetric
+
+    %% STYLING
+    style IN fill:#fff3e0,stroke:#e65100
+    style SPLIT_PHASE fill:#e1f5fe,stroke:#0277bd
+    style MAP_PHASE fill:#e3f2fd,stroke:#1565c0
+    style REDUCE_PHASE fill:#fce4ec,stroke:#c2185b
+    style HDFS_OUT fill:#fff9c4,stroke:#fbc02d
+    style CLIENT fill:#e8f5e9,stroke:#2e7d32
+    style MapNote fill:#fff,stroke:#999,stroke-dasharray: 5 5
+    style RedNote fill:#fff,stroke:#999,stroke-dasharray: 5 5
                     </div>
                 </div>
 
