@@ -612,59 +612,70 @@ graph LR
     style MASKS fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
                             </div>
                         </div>
+
+                        <!-- Slide 3: FeatGLaC Image -->
+                        <div style="width: 100%; flex-shrink: 0; scroll-snap-align: start; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">b) FeatGLaC: Feature-Guided Layer Compositing</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
+                                <img src="featglac.jpg" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="FeatGLaC">
+                            </div>
+                        </div>
+
+                        <!-- Slide 4: FeatGLaC Diagram -->
+                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">b) FeatGLaC: Flow Diagram</h3>
+                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
+graph LR
+    subgraph INPUTS ["Inputs"]
+        FG["Foreground Layer"]
+        BG["Background Layer"]
+        Noise["Random Noise"]
+    end
+    
+    subgraph GUIDANCE ["Guidance Branch"]
+        VAE1["VAE Encoder"]
+        GUNET["Guidance U-Net"]
+        EXTRACT["Extract K, V<br/>Features"]
+    end
+    
+    subgraph GENERATION ["Generation Branch"]
+        GSTART["Latent Noise"]
+        GNET["Generation U-Net"]
+        INJECT["Feature Injection<br/>per Step"]
+    end
+    
+    subgraph DECODE ["Decoding"]
+        VAE2["VAE Decoder"]
+    end
+    
+    subgraph OUTPUT ["Output"]
+        Result["Composited<br/>Image"]
+    end
+    
+    FG --> VAE1
+    BG --> GSTART
+    Noise --> GSTART
+    VAE1 --> GUNET
+    GUNET --> EXTRACT
+    EXTRACT --> INJECT
+    GSTART --> GNET
+    INJECT --> GNET
+    GNET --> VAE2
+    VAE2 --> Result
+    
+    style GUIDANCE fill:#d4e6f7,stroke:#3498db,stroke-width:2px
+    style GENERATION fill:#fff4e6,stroke:#f96,stroke-width:2px
+    style DECODE fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
+    style Result fill:#d5f4e6,stroke:#27ae60,stroke-width:2px
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Navigation -->
                     <div style="text-align: center; margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
                         <button onclick="document.getElementById('archCarousel').scrollBy({left: -(window.innerWidth + 16), behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">◄ Trước</button>
-                        <span style="color: #666; font-size: 0.9rem;">Image • Diagram</span>
+                        <span style="color: #666; font-size: 0.9rem;">4 slides (DeGLaD + FeatGLaC)</span>
                         <button onclick="document.getElementById('archCarousel').scrollBy({left: window.innerWidth + 16, behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">Sau ►</button>
-                    </div>
-                </div>
-
-                <!-- DIAGRAM 2: FeatGLaC -->
-                <div class="diagram-box" style="padding: 0.3rem; overflow-x: auto;">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 0.1rem; font-size: 0.75rem;">FeatGLaC: Feature-Guided Layer Compositing</h3>
-                    <div class="mermaid" style="font-size: 11px;">
-                        graph LR
-                        subgraph INPUTS ["Inputs"]
-                            FG["Foreground Layer"]
-                            BG["Background Layer"]
-                            Noise["Random Noise"]
-                        end
-                        
-                        subgraph GUIDANCE ["Guidance Branch"]
-                            VAE1["VAE Encoder"]
-                            GUNET["Guidance U-Net"]
-                            EXTRACT["Extract K, V<br/>Features"]
-                        end
-                        
-                        subgraph GENERATION ["Generation Branch"]
-                            GSTART["Latent Noise"]
-                            GNET["Generation U-Net"]
-                            INJECT["Feature Injection<br/>per Step"]
-                        end
-                        
-                        subgraph DECODE ["Decoding"]
-                            VAE2["VAE Decoder"]
-                        end
-                        
-                        FG --> VAE1
-                        BG --> VAE1
-                        VAE1 --> GUNET
-                        GUNET --> EXTRACT
-                        Noise --> GSTART
-                        GSTART --> GNET
-                        EXTRACT -.->|"Inject at each<br/>denoising step"| INJECT
-                        GNET --> INJECT
-                        INJECT --> VAE2
-                        VAE2 --> OUTPUT["Final Output"]
-                        
-                        style GUIDANCE fill:#f0f0f0,stroke:#666,stroke-width:2px
-                        style GENERATION fill:#e8e8e8,stroke:#666,stroke-width:2px
-                        style INJECT fill:#d0d0d0,stroke:#333,stroke-width:2px
-                        style EXTRACT fill:#d0d0d0,stroke:#333,stroke-width:2px
-                        style OUTPUT fill:#b8b8b8,stroke:#333,stroke-width:2px
                     </div>
                 </div>
             </div>
