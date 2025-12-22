@@ -352,6 +352,7 @@
                     <li><a href="#model">Mô hình</a></li>
                     <li><a href="#arch">Kiến trúc</a></li>
                     <li><a href="#bigdata">Big Data</a></li>
+                    <li><a href="#implementation">Thực hiện</a></li>
                 </ul>
             </nav>
         </div>
@@ -393,28 +394,52 @@
         </section>
 
         <!-- SECTION 1: VẤN ĐỀ -->
-        <section id="paper">
+<section id="paper">
             <div class="section-content">
-                <h2>Phân Tích Vấn Đề</h2>
+                <h2>Tổng Quan & Định Nghĩa Vấn Đề</h2>
+                
+                <div class="solution-box" style="background: #fff; border-left: 5px solid #8e44ad; margin-bottom: 2rem;">
+                    <h3><i class="fa-solid fa-book-open"></i> Các Khái Niệm Cốt Lõi</h3>
+                    <div class="grid-2" style="margin-top: 1rem;">
+                        <div>
+                            <strong style="color: #8e44ad;">1. Zero-Shot Learning:</strong>
+                            <p style="font-size: 0.95rem; margin-top: 0.5rem;">
+                                Là khả năng mô hình thực hiện nhiệm vụ mà <em>không cần huấn luyện lại (training-free)</em> trên dữ liệu mới.
+                                <br/>➔ <strong>Lợi ích:</strong> Tiết kiệm tài nguyên tính toán (GPU), triển khai nhanh chóng.
+                            </p>
+                        </div>
+                        <div>
+                            <strong style="color: #8e44ad;">2. Depth-Aware (Nhận thức độ sâu):</strong>
+                            <p style="font-size: 0.95rem; margin-top: 0.5rem;">
+                                Khả năng hiểu cấu trúc không gian 3D của ảnh (gần/xa), thay vì chỉ xử lý trên mặt phẳng 2D (pixels).
+                                <br/>➔ <strong>Mục tiêu:</strong> Giữ đúng quy luật vật lý khi chèn vật thể.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid-2">
                     <div class="problem-box">
-                        <h3><i class="fa-solid fa-triangle-exclamation"></i> Thách Thức</h3>
-                        <p>Các mô hình chỉnh sửa ảnh AI hiện nay hoạt động tốt trên 2D nhưng "mù" về không gian 3D.</p>
-                        <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 1rem 0;">
-                        <p><em>Ví dụ: Vật thể chèn vào thường bị dán lên mọi thứ thay vì tuân theo quy luật che khuất (occlusion).</em></p>
+                        <h3><i class="fa-solid fa-triangle-exclamation"></i> Hạn Chế Của SOTA (Stable Diffusion)</h3>
+                        <p>Các mô hình khuếch tán (Diffusion Models) hiện tại rất mạnh mẽ nhưng gặp lỗi nghiêm trọng về không gian:</p>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; font-size: 0.95rem;">
+                            <li><strong>Mất cấu trúc 3D:</strong> Khi chèn vật thể mới, model thường "dán đè" lên mọi thứ thay vì đặt nó ra sau vật cản.</li>
+                            <li><strong>Lỗi Che Khuất (Occlusion Error):</strong> Không xử lý được trường hợp vật thể mới bị vật thể cũ che khuất một phần.</li>
+                            <li><strong>Thiếu nhất quán:</strong> Ánh sáng và bóng đổ không khớp với độ sâu của cảnh.</li>
+                        </ul>
                     </div>
+                    
                     <div class="solution-box">
-                        <h3><i class="fa-solid fa-check-circle"></i> Giải Pháp Zero-Shot</h3>
-                        <p>Phương pháp không cần huấn luyện lại (Training-free), gồm 2 bước:</p>
-                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                            <li><strong>DeGLaD:</strong> Tách lớp dựa trên độ sâu.</li>
-                            <li><strong>FeatGLaC:</strong> Ghép ảnh dựa trên đặc trưng.</li>
+                        <h3><i class="fa-solid fa-check-circle"></i> Giải Pháp Đề Xuất</h3>
+                        <p>Một pipeline chỉnh sửa ảnh <strong>Zero-Shot</strong> sử dụng thông tin độ sâu để hướng dẫn quá trình sinh ảnh:</p>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; font-size: 0.95rem;">
+                            <li><strong>DeGLaD Module:</strong> Phân tách ảnh thành các lớp (Layers) dựa trên bản đồ độ sâu (Depth Map).</li>
+                            <li><strong>FeatGLaC Module:</strong> Ghép nối các đặc trưng (Features) lại với nhau để tạo ra ảnh hoàn chỉnh, đảm bảo vật thể được chèn đúng vị trí không gian.</li>
                         </ul>
                     </div>
                 </div>
             </div>
         </section>
-
         <!-- SECTION 2: MÔ HÌNH -->
         <section id="model">
             <div class="section-content" style="max-width: 100%; width: 100%;">
@@ -682,131 +707,157 @@ graph LR
         </section>
 
         <!-- SECTION 4: BIG DATA -->
-        <section id="bigdata">
-            <div class="section-content">
-                <h2>Triển Khai Big Data</h2>
-                <div class="solution-box" style="margin-bottom: 2rem;">
-                    <h3>Chiến lược Xử lý dữ liệu lớn</h3>
-                    <p>Mở rộng mô hình để xử lý <strong>Dataset >10GB</strong> (~25,000 ảnh) trên Kaggle bằng kiến trúc <strong>Xử lý song song dữ liệu (Data Parallelism)</strong> trên GPU T4 x2.</p>
-                </div>
+<section id="bigdata">
+    <div class="section-content">
+        <h2>Triển Khai Big Data & AI</h2>
+        <div class="solution-box" style="margin-bottom: 2rem;">
+            <h3>Chiến lược PySpark & GPU Acceleration</h3>
+            <p>Sử dụng <strong>Apache Spark (PySpark)</strong> để phân tán dữ liệu ảnh lớn (~100k files) và thực hiện suy luận song song (Parallel Inference) bằng mô hình <strong>Depth Anything</strong> trên cụm <strong>Multi-GPU (2x T4)</strong> của Kaggle.</p>
+        </div>
 
-                <div class="diagram-box">
-                    <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Big Data Pipeline: Xử lý song song trên GPU</h3>
-                    <div class="mermaid" style="font-size: 12px;">
-                        flowchart TD
+        <div class="diagram-box">
+            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Pipeline: Spark MapPartitions + Deep Learning</h3>
+            <div class="mermaid" style="font-size: 12px;">
+                flowchart TD
     %% --- BLOCK 1: INPUT ---
-    subgraph IN ["1. INPUT PREPARATION"]
-        SeqFile[("HDFS: Input.seq<br/>(10GB Merged Data)")]
+    subgraph IN ["1. DATA INGESTION"]
+        RawData[("Kaggle Input<br/>(NYU Depth V2 Dataset)")]
+        SparkRead[/"Spark Driver<br/>read.format('binaryFile')"/]
     end
 
-    %% --- BLOCK 2: MAPREDUCE PROCESS ---
-    subgraph MR ["2. MAP-REDUCE JOB"]
+    %% --- BLOCK 2: SPARK PROCESS ---
+    subgraph SPARK_JOB ["2. SPARK PROCESSING (Map-Only)"]
         direction TB
         
-        %% SPLITTING
-        subgraph SPLIT_PHASE ["Input Splitting"]
+        %% SHUFFLE / PARTITIONING
+        subgraph SHUFFLE_PHASE ["Load Balancing"]
+            Repartition["repartition(40)<br/>(Distribute Data)"]
+        end
+
+        %% PARALLEL WORKERS
+        subgraph WORKER_PHASE ["PARALLEL GPU EXECUTION"]
             direction LR
-            S1["Split 1 (128MB)"]
-            S2["Split 2 (128MB)"]
-            S3["Split 3 (128MB)"]
+            W1["Executor 1<br/>(GPU 0)"]
+            W2["Executor 2<br/>(GPU 1)"]
         end
 
-        %% MAPPING (PARALLEL)
-        subgraph MAP_PHASE ["MAP PHASE (Image Processing)"]
-            direction LR
-            M1["Mapper Worker 1"]
-            M2["Mapper Worker 2"]
-            M3["Mapper Worker 3"]
-        end
-
-        %% MAPPER LOGIC NOTE
-        MapNote[/"<b>Mapper Logic:</b><br/>1. Decode Bytes -> Image<br/>2. Apply Grayscale/DeGLaD<br/>3. Emit (Filename, ProcessedData)"/]
-
-        %% SHUFFLE & SORT
-        subgraph SHUFFLE_PHASE ["SHUFFLE & SORT"]
-            SS["Network Transfer & Grouping"]
-        end
-
-        %% REDUCING
-        subgraph REDUCE_PHASE ["REDUCE PHASE (Aggregation)"]
-            R1["Reducer Worker"]
-        end
-
-        %% REDUCER LOGIC NOTE
-        RedNote[/"<b>Reducer Logic:</b><br/>1. Receive Processed Imgs<br/>2. Calculate RMSE Metric<br/>3. Write to Output"/]
+        %% LOGIC NOTE
+        ProcNote[/"<b>Processing Logic:</b><br/>1. Desync Sleep (Anti-Crash)<br/>2. Load Depth-Anything Model<br/>3. Batch Process (32 imgs)<br/>4. Save PNG to Disk"/]
 
         %% CONNECTIONS
-        SeqFile --> S1 & S2 & S3
-        S1 --> M1
-        S2 --> M2
-        S3 --> M3
+        RawData --> SparkRead
+        SparkRead --> Repartition
+        Repartition --> W1 & W2
         
-        M1 & M2 & M3 -.- MapNote
-        M1 & M2 & M3 --> SS
-        SS --> R1
-        R1 -.- RedNote
+        W1 & W2 -.- ProcNote
     end
 
-    %% --- BLOCK 3: HDFS OUTPUT ---
-    subgraph HDFS_OUT ["3. HDFS OUTPUT"]
-        PartFile[("part-r-00000<br/>(Processed Data + RMSE)")]
-    end
-
-    %% --- BLOCK 4: CLIENT EXTRACTION ---
-    subgraph CLIENT ["4. POST-PROCESSING (Local Client)"]
-        Extract["Java Extractor Tool"]
-        OutImg1["img_001.jpg"]
-        OutImg2["img_002.jpg"]
-        OutMetric["rmse_report.txt"]
+    %% --- BLOCK 3: OUTPUT ---
+    subgraph STORAGE ["3. OUTPUT STORAGE"]
+        OutDir[("/kaggle/working/<br/>depth_output/")]
+        Img1["depth_001.png"]
+        Img2["depth_002.png"]
     end
 
     %% FINAL CONNECTIONS
-    R1 --> PartFile
-    PartFile --> Extract
-    Extract --> OutImg1
-    Extract --> OutImg2
-    Extract --> OutMetric
+    W1 --> OutDir
+    W2 --> OutDir
+    OutDir --> Img1 & Img2
 
     %% STYLING
     style IN fill:#fff3e0,stroke:#e65100
-    style SPLIT_PHASE fill:#e1f5fe,stroke:#0277bd
-    style MAP_PHASE fill:#e3f2fd,stroke:#1565c0
-    style REDUCE_PHASE fill:#fce4ec,stroke:#c2185b
-    style HDFS_OUT fill:#fff9c4,stroke:#fbc02d
-    style CLIENT fill:#e8f5e9,stroke:#2e7d32
-    style MapNote fill:#fff,stroke:#999,stroke-dasharray: 5 5
-    style RedNote fill:#fff,stroke:#999,stroke-dasharray: 5 5
-                    </div>
-                </div>
+    style SPARK_JOB fill:#e1f5fe,stroke:#0277bd
+    style SHUFFLE_PHASE fill:#e3f2fd,stroke:#1565c0
+    style WORKER_PHASE fill:#bbdefb,stroke:#0d47a1
+    style STORAGE fill:#e8f5e9,stroke:#2e7d32
+    style ProcNote fill:#fff,stroke:#999,stroke-dasharray: 5 5
+            </div>
+        </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-                    <div class="solution-box">
-                        <h4>Cấu hình Phần cứng</h4>
-                        <ul style="list-style-position: inside; line-height: 1.8;">
-                            <li><strong>GPU:</strong> 2x NVIDIA T4 (16GB VRAM mỗi)</li>
-                            <li><strong>CPU:</strong> 8-core Intel Xeon</li>
-                            <li><strong>RAM:</strong> 32GB DDR4</li>
-                            <li><strong>Storage:</strong> 100GB NVMe SSD</li>
-                        </ul>
-                    </div>
-                    <div class="solution-box">
-                        <h4>Tối ưu Xử lý</h4>
-                        <ul style="list-style-position: inside; line-height: 1.8;">
-                            <li><strong>Batch Size:</strong> 32 per GPU</li>
-                            <li><strong>Data Loader:</strong> 8 workers</li>
-                            <li><strong>Mixed Precision:</strong> FP16 training</li>
-                            <li><strong>Processing Time:</strong> ~45 phút/epoch</li>
-                        </ul>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+            <div class="solution-box">
+                <h4>Cấu hình Tài nguyên (Kaggle)</h4>
+                <ul style="list-style-position: inside; line-height: 1.8;">
+                    <li><strong>Cluster:</strong> Spark Local[*] Mode</li>
+                    <li><strong>GPU:</strong> 2x NVIDIA Tesla T4 (16GB x2)</li>
+                    <li><strong>Driver/Executor Memory:</strong> 14GB</li>
+                    <li><strong>Library:</strong> PySpark, Torch, TorchVision</li>
+                </ul>
+            </div>
+            <div class="solution-box">
+                <h4>Kỹ thuật Tối ưu hóa</h4>
+                <ul style="list-style-position: inside; line-height: 1.8;">
+                    <li><strong>Load Balancing:</strong> Repartition (40 tasks)</li>
+                    <li><strong>Throughput:</strong> Batch Size 32 (Max VRAM)</li>
+                    <li><strong>Stability:</strong> Random Sleep Desync (Chống nghẽn GPU)</li>
+                    <li><strong>Architecture:</strong> VITS Encoder (Speed/Accuracy)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>    
+<section id="references">
+            <div class="section-content">
+                <h2>Tài Liệu Tham Khảo</h2>
+                
+                <div class="solution-box" style="background: white; border-left: 5px solid #34495e;">
+                    <h3><i class="fa-solid fa-quote-right"></i> Các Nghiên Cứu Nền Tảng</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                        
+                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                            <strong style="color: #2c3e50;">[1] Depth Anything Module</strong>
+                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                                Lihe Young et al., <em>"Depth Anything: Unleashing the Power of Large-Scale Unlabeled Data,"</em> CVPR 2024. 
+                                <br/>
+                                <a href="https://github.com/LiheYoung/Depth-Anything" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo (Official) ➔
+                                </a>
+                            </p>
+                        </div>
+
+                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                            <strong style="color: #2c3e50;">[2] Latent Diffusion Models (Stable Diffusion)</strong>
+                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                                Robin Rombach et al., <em>"High-Resolution Image Synthesis with Latent Diffusion Models,"</em> CVPR 2022.
+                                <br/>
+                                <a href="https://github.com/CompVis/latent-diffusion" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo ➔
+                                </a>
+                            </p>
+                        </div>
+
+                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                            <strong style="color: #2c3e50;">[3] DINOv2 Backbone</strong>
+                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                                Maxime Oquab et al., <em>"DINOv2: Learning Robust Visual Features without Supervision,"</em> arXiv 2023.
+                                <br/>
+                                <a href="https://github.com/facebookresearch/dinov2" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo ➔
+                                </a>
+                            </p>
+                        </div>
+
+                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                            <strong style="color: #2c3e50;">[4] Zero-Shot Image Editing (pix2pix-zero)</strong>
+                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                                Gaurav Parmar et al., <em>"Zero-Shot Image-to-Image Translation,"</em> SIGGRAPH 2023.
+                                <br/>
+                                <a href="https://github.com/pix2pixzero/pix2pix-zero" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo (Official) ➔
+                                </a>
+                            </p>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </section>
-    </main>
+        </main>
 
-    <footer>
+    <footer id="implementation">
         <h3>Zero-Shot Depth-Aware Image Editing</h3>
-        <p>Báo cáo Đồ án Môn học Big Data • ICCV 2025</p>
-        <p style="font-size: 0.9rem; margin-top: 1rem; opacity: 0.7;">Thực hiện trên Kaggle & Hadoop</p>
+        <p>Báo cáo bài tập lớn môn học Big Data - Nhóm 14 - K64HTTT1</p>
+        <p style="font-size: 0.9rem; margin-top: 1rem; opacity: 0.7;">Thực hiện bởi<br/> Phạm Quốc Hùng - 2151060248<br/>Nguyễn Văn Sơn - 1951060984</p>
     </footer>
 
     <script>
