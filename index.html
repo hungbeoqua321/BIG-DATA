@@ -19,7 +19,7 @@
 
         html {
             scroll-behavior: smooth;
-            scroll-snap-type: y mandatory;
+            scroll-snap-type: y proximity;
         }
 
         body {
@@ -718,60 +718,54 @@ graph LR
         <div class="diagram-box">
             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Pipeline: Spark MapPartitions + Deep Learning</h3>
             <div class="mermaid" style="font-size: 12px;">
-                flowchart TD
-    %% --- BLOCK 1: INPUT ---
-    subgraph IN ["1. DATA INGESTION"]
-        RawData[("Kaggle Input<br/>(NYU Depth V2 Dataset)")]
-        SparkRead[/"Spark Driver<br/>read.format('binaryFile')"/]
+flowchart LR
+    %% --- KHỐI 1: INPUT ---
+    subgraph IN ["1. INPUT PHASE"]
+        Data[("Dataset NYU Depth V2<br/>(Hàng nghìn ảnh)")]
     end
 
-    %% --- BLOCK 2: SPARK PROCESS ---
-    subgraph SPARK_JOB ["2. SPARK PROCESSING (Map-Only)"]
+    %% --- KHỐI 2: MAP PHASE (Chia để trị) ---
+    subgraph MAP ["2. MAP PHASE (Xử lý song song)"]
         direction TB
+        Split[("Chia nhỏ dữ liệu<br/>(Partitioning)")]
         
-        %% SHUFFLE / PARTITIONING
-        subgraph SHUFFLE_PHASE ["Load Balancing"]
-            Repartition["repartition(40)<br/>(Distribute Data)"]
+        subgraph WORKERS ["Các máy trạm (Workers)"]
+            W1["Worker 1<br/>(Chạy Model Depth)"]
+            W2["Worker 2<br/>(Chạy Model Depth)"]
+            W3["Worker 3<br/>(Chạy Model Depth)"]
         end
-
-        %% PARALLEL WORKERS
-        subgraph WORKER_PHASE ["PARALLEL GPU EXECUTION"]
-            direction LR
-            W1["Executor 1<br/>(GPU 0)"]
-            W2["Executor 2<br/>(GPU 1)"]
-        end
-
-        %% LOGIC NOTE
-        ProcNote[/"<b>Processing Logic:</b><br/>1. Desync Sleep (Anti-Crash)<br/>2. Load Depth-Anything Model<br/>3. Batch Process (32 imgs)<br/>4. Save PNG to Disk"/]
-
-        %% CONNECTIONS
-        RawData --> SparkRead
-        SparkRead --> Repartition
-        Repartition --> W1 & W2
         
-        W1 & W2 -.- ProcNote
+        NoteMap[/"<b>Nhiệm vụ Map:</b><br/>Nhận ảnh thô -> Tính toán độ sâu -> Ra ảnh Depth"/]
     end
 
-    %% --- BLOCK 3: OUTPUT ---
-    subgraph STORAGE ["3. OUTPUT STORAGE"]
-        OutDir[("/kaggle/working/<br/>depth_output/")]
-        Img1["depth_001.png"]
-        Img2["depth_002.png"]
+    %% --- KHỐI 3: REDUCE PHASE (Gom lại) ---
+    subgraph REDUCE ["3. REDUCE PHASE (Tổng hợp)"]
+        direction TB
+        Merge["Gom kết quả<br/>(Aggregation)"]
+        NoteReduce[/"<b>Nhiệm vụ Reduce:</b><br/>Gom các ảnh lẻ tẻ -> Đóng gói/Lưu trữ"/]
     end
 
-    %% FINAL CONNECTIONS
-    W1 --> OutDir
-    W2 --> OutDir
-    OutDir --> Img1 & Img2
+    %% --- KHỐI 4: OUTPUT ---
+    subgraph OUT ["4. OUTPUT"]
+        Result[("Folder Kết quả<br/>(Depth Images)")]
+    end
 
-    %% STYLING
+    %% LUỒNG ĐI
+    Data --> Split
+    Split --> W1 & W2 & W3
+    W1 & W2 & W3 -.- NoteMap
+    
+    W1 & W2 & W3 --> Merge
+    Merge -.- NoteReduce
+    Merge --> Result
+
+    %% STYLING CHO GỌN
     style IN fill:#fff3e0,stroke:#e65100
-    style SPARK_JOB fill:#e1f5fe,stroke:#0277bd
-    style SHUFFLE_PHASE fill:#e3f2fd,stroke:#1565c0
-    style WORKER_PHASE fill:#bbdefb,stroke:#0d47a1
-    style STORAGE fill:#e8f5e9,stroke:#2e7d32
-    style ProcNote fill:#fff,stroke:#999,stroke-dasharray: 5 5
-            </div>
+    style MAP fill:#e1f5fe,stroke:#0277bd
+    style REDUCE fill:#fce4ec,stroke:#c2185b
+    style OUT fill:#e8f5e9,stroke:#2e7d32
+    style NoteMap fill:#fff,stroke:#999,stroke-dasharray: 5 5
+    style NoteReduce fill:#fff,stroke:#999,stroke-dasharray: 5 5            </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
