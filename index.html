@@ -719,54 +719,84 @@ graph LR
             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Pipeline: Spark MapPartitions + Deep Learning</h3>
             <div class="mermaid" style="font-size: 12px;">
 flowchart LR
-    %% --- KHỐI 1: INPUT ---
-    subgraph IN ["1. INPUT PHASE"]
-        Data[("Dataset NYU Depth V2<br/>(Hàng nghìn ảnh)")]
-    end
-
-    %% --- KHỐI 2: MAP PHASE (Chia để trị) ---
-    subgraph MAP ["2. MAP PHASE (Xử lý song song)"]
+    %% --- KHỐI 1: INPUT (Xếp dọc) ---
+    subgraph INPUT ["1. INPUT DATA"]
         direction TB
-        Split[("Chia nhỏ dữ liệu<br/>(Partitioning)")]
-        
-        subgraph WORKERS ["Các máy trạm (Workers)"]
-            W1["Worker 1<br/>(Chạy Model Depth)"]
-            W2["Worker 2<br/>(Chạy Model Depth)"]
-            W3["Worker 3<br/>(Chạy Model Depth)"]
-        end
-        
-        NoteMap[/"<b>Nhiệm vụ Map:</b><br/>Nhận ảnh thô -> Tính toán độ sâu -> Ra ảnh Depth"/]
+        I1["1. Apple (Ở đầu)"]
+        I2["2. Grape (Xuống đáy)"]
+        I3["3. Banana (Ở giữa)"]
+        I4["4. Grape (Xuống đáy)"]
+        I5["5. Apple (Lên đỉnh)"]
+        I6["6. Banana (Ở giữa)"]
     end
 
-    %% --- KHỐI 3: REDUCE PHASE (Gom lại) ---
-    subgraph REDUCE ["3. REDUCE PHASE (Tổng hợp)"]
+    %% --- KHỐI 2: MAP (Xếp dọc thẳng hàng với Input) ---
+    subgraph MAP ["2. MAP PHASE"]
         direction TB
-        Merge["Gom kết quả<br/>(Aggregation)"]
-        NoteReduce[/"<b>Nhiệm vụ Reduce:</b><br/>Gom các ảnh lẻ tẻ -> Đóng gói/Lưu trữ"/]
+        M1["Map 1: (Apple, 1)"]
+        M2["Map 2: (Grape, 1)"]
+        M3["Map 3: (Banana, 1)"]
+        M4["Map 4: (Grape, 1)"]
+        M5["Map 5: (Apple, 1)"]
+        M6["Map 6: (Banana, 1)"]
     end
 
-    %% --- KHỐI 4: OUTPUT ---
-    subgraph OUT ["4. OUTPUT"]
-        Result[("Folder Kết quả<br/>(Depth Images)")]
+    %% --- KHỐI 3: SHUFFLE (Xếp dọc - Các chuồng chứa) ---
+    subgraph SHUFFLE ["3. SHUFFLE (Sort & Group)"]
+        direction TB
+        %% Các hộp cố định vị trí
+        BinA["<b>BIN: APPLE</b><br/>(Nằm trên cùng)"]
+        BinB["<b>BIN: BANANA</b><br/>(Nằm ở giữa)"]
+        BinC["<b>BIN: GRAPE</b><br/>(Nằm dưới đáy)"]
     end
 
-    %% LUỒNG ĐI
-    Data --> Split
-    Split --> W1 & W2 & W3
-    W1 & W2 & W3 -.- NoteMap
+    %% --- KHỐI 4: REDUCE (Xếp dọc) ---
+    subgraph REDUCE ["4. REDUCE PHASE"]
+        direction TB
+        R1["Reducer Apple<br/>Sum = 2"]
+        R2["Reducer Banana<br/>Sum = 2"]
+        R3["Reducer Grape<br/>Sum = 2"]
+    end
+
+    %% --- CÁC DÂY NỐI (Tạo hiệu ứng chéo nhau) ---
+
+    %% 1. Input sang Map (Đi thẳng 1-1)
+    I1 --> M1
+    I2 --> M2
+    I3 --> M3
+    I4 --> M4
+    I5 --> M5
+    I6 --> M6
+
+    %% 2. Map sang Shuffle (CHÉO NHAU TUNG TÓE Ở ĐÂY)
     
-    W1 & W2 & W3 --> Merge
-    Merge -.- NoteReduce
-    Merge --> Result
+    %% Nhóm Táo (Màu Đỏ): Từ dòng 1 và dòng 5 phải bay về BinA (Trên cùng)
+    M1 -- "(Ap, 1)" --> BinA
+    M5 -- "(Ap, 1)" --> BinA
+    %% Linkstyle 6,7 stroke:red,stroke-width:2px;
 
-    %% STYLING CHO GỌN
-    style IN fill:#fff3e0,stroke:#e65100
+    %% Nhóm Nho (Màu Xanh): Từ dòng 2 và dòng 4 phải bay về BinC (Dưới đáy)
+    %% Dây này sẽ cắt chéo mạnh nhất
+    M2 -- "(Gr, 1)" --> BinC
+    M4 -- "(Gr, 1)" --> BinC
+    %% Linkstyle 8,9 stroke:green,stroke-width:2px;
+
+    %% Nhóm Chuối (Màu Vàng): Từ dòng 3 và 6 bay về BinB (Giữa)
+    M3 -- "(Ba, 1)" --> BinB
+    M6 -- "(Ba, 1)" --> BinB
+    %% Linkstyle 10,11 stroke:orange,stroke-width:2px;
+
+    %% 3. Shuffle sang Reduce (Đi thẳng)
+    BinA --> R1
+    BinB --> R2
+    BinC --> R3
+
+    %% --- TÔ MÀU CHO ĐẸP ---
+    style INPUT fill:#fff3e0,stroke:#e65100
     style MAP fill:#e1f5fe,stroke:#0277bd
-    style REDUCE fill:#fce4ec,stroke:#c2185b
-    style OUT fill:#e8f5e9,stroke:#2e7d32
-    style NoteMap fill:#fff,stroke:#999,stroke-dasharray: 5 5
-    style NoteReduce fill:#fff,stroke:#999,stroke-dasharray: 5 5            </div>
-        </div>
+    style SHUFFLE fill:#fff9c4,stroke:#fbc02d
+    style REDUCE fill:#fce4ec,stroke:#c2185b  </div>
+    </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
             <div class="solution-box">
