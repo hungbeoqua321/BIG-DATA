@@ -717,72 +717,9 @@ graph LR
 
         <div class="diagram-box">
             <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Pipeline: Spark MapPartitions + Deep Learning</h3>
-            <div class="mermaid" style="font-size: 12px;">
-flowchart LR
-    %% --- BLOCK 1: INPUT ---
-    subgraph INPUT ["1. INPUT (10GB DATASET)"]
-        direction TB
-        I1["File Chunk 1<br/>(Raw Bytes)"]
-        I2["File Chunk 2<br/>(Raw Bytes)"]
-        I3["File Chunk 3<br/>(Raw Bytes)"]
-        I4["File Chunk 4<br/>(Raw Bytes)"]
-    end
-
-    %% --- BLOCK 2: PARTITIONING ---
-    subgraph MAP ["2. SPARK PARTITIONING"]
-        direction TB
-        P1["Partition 0<br/>(Even Task)"]
-        P2["Partition 1<br/>(Odd Task)"]
-        P3["Partition 2<br/>(Even Task)"]
-        P4["Partition 3<br/>(Odd Task)"]
-    end
-
-    %% --- BLOCK 3: LOAD BALANCING ---
-    subgraph SHUFFLE ["3. GPU LOAD BALANCING"]
-        direction TB
-        %% Distribute tasks to specific GPUs
-        GPU0["<b>EXECUTOR 1</b><br/>(NVIDIA T4 - GPU 0)"]
-        GPU1["<b>EXECUTOR 2</b><br/>(NVIDIA T4 - GPU 1)"]
-    end
-
-    %% --- BLOCK 4: OUTPUT ---
-    subgraph PROCESS ["4. INFERENCE & OUTPUT"]
-        direction TB
-        Out1["<b>Depth Model</b><br/>Batch: 32<br/>Save: .png"]
-        Out2["<b>Depth Model</b><br/>Batch: 32<br/>Save: .png"]
-    end
-
-    %% --- CONNECTIONS ---
-
-    %% 1. Input to Spark Partitions
-    I1 --> P1
-    I2 --> P2
-    I3 --> P3
-    I4 --> P4
-
-    %% 2. Load Balancing Logic (Crossing lines)
-    %% Even partitions go to GPU 0
-    P1 -- "Task 0" --> GPU0
-    P3 -- "Task 2" --> GPU0
-    linkStyle 4,5 stroke:#2196F3,stroke-width:2px;
-
-    %% Odd partitions go to GPU 1
-    P2 -- "Task 1" --> GPU1
-    P4 -- "Task 3" --> GPU1
-    linkStyle 6,7 stroke:#FF9800,stroke-width:2px;
-
-    %% 3. Inference to Output
-    GPU0 --> Out1
-    GPU1 --> Out2
-
-    %% --- STYLING ---
-    style INPUT fill:#e3f2fd,stroke:#1565c0
-    style MAP fill:#fff3e0,stroke:#e65100
-    style SHUFFLE fill:#e8f5e9,stroke:#2e7d32
-    style PROCESS fill:#f3e5f5,stroke:#7b1fa2
-    style GPU0 fill:#333,stroke:#333,color:#fff
-    style GPU1 fill:#333,stroke:#333,color:#fff
-  </div>
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <img src="bigdata.jpg" alt="Big Data Pipeline" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s;">
+            </div>
     </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
