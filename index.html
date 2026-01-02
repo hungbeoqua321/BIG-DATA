@@ -709,37 +709,179 @@ graph LR
         <!-- SECTION 4: BIG DATA -->
 <section id="bigdata">
     <div class="section-content">
-        <h2>Triển Khai Big Data & AI</h2>
-        <div class="solution-box" style="margin-bottom: 2rem;">
-            <h3>Chiến lược PySpark & GPU Acceleration</h3>
-            <p>Sử dụng <strong>Apache Spark (PySpark)</strong> để phân tán dữ liệu ảnh lớn (~100k files) và thực hiện suy luận song song (Parallel Inference) bằng mô hình <strong>Depth Anything</strong> trên cụm <strong>Multi-GPU (2x T4)</strong> của Kaggle.</p>
+        <h2>Xử Lý Big Data & Tính Toán GPU Phân Tán</h2>
+        
+        <!-- Giới Thiệu Chung -->
+        <div class="solution-box" style="margin-bottom: 3rem;">
+            <h3><i class="fa-solid fa-database"></i> Tổng Quan Thách Thức</h3>
+            <p>
+                Ứng dụng xử lý ảnh <strong>Depth-Aware Editing</strong> phải đối mặt với thách thức về khối lượng dữ liệu lớn (~<strong>10GB, ~100,000 files</strong>) 
+                và yêu cầu tính toán cao từ mô hình <strong>Depth Anything (VITS)</strong>. Để giải quyết, chúng tôi xây dựng một <strong>pipeline xử lý song song</strong> 
+                (parallel processing) sử dụng <strong>Apache Spark</strong> kết hợp với <strong>Multi-GPU Acceleration</strong> trên Kaggle Notebook.
+            </p>
         </div>
 
-        <div class="diagram-box">
-            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">Pipeline: Spark MapPartitions + Deep Learning</h3>
-            <div style="text-align: center; margin-top: 1.5rem;">
-                <img src="bigdata.jpg" alt="Big Data Pipeline" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s;">
-            </div>
-    </div>
+        <!-- ============ GIAI ĐOẠN 1: TRAIN/PREPARATION ============ -->
+        <div style="margin-bottom: 3rem;">
+            <h3 style="color: #2980b9; border-bottom: 3px solid #2980b9; padding-bottom: 1rem; margin-bottom: 2rem;">
+                <i class="fa-solid fa-brain"></i> Giai Đoạn 1: Chuẩn Bị Dữ Liệu (Depth Map Extraction)
+            </h3>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-            <div class="solution-box">
-                <h4>Cấu hình Tài nguyên (Kaggle)</h4>
-                <ul style="list-style-position: inside; line-height: 1.8;">
-                    <li><strong>Cluster:</strong> Spark Local[*] Mode</li>
-                    <li><strong>GPU:</strong> 2x NVIDIA Tesla T4 (16GB x2)</li>
-                    <li><strong>Driver/Executor Memory:</strong> 14GB</li>
-                    <li><strong>Library:</strong> PySpark, Torch, TorchVision</li>
+            <div class="problem-box" style="margin-bottom: 1.5rem;">
+                <h4 style="color: #c0392b; margin-bottom: 0.8rem;">Bài Toán Depth Estimation</h4>
+                <p>
+                    Đầu tiên, chúng ta cần <strong>ước tính độ sâu (depth map)</strong> cho mỗi ảnh đầu vào. Đây là quá trình xác định khoảng cách 
+                    của mỗi pixel từ camera, là dữ liệu nền tảng cho <strong>Depth-Aware Editing</strong>. Sử dụng mô hình 
+                    <strong>Depth Anything</strong> — một mô hình pre-trained được huấn luyện trên dataset lớn với khả năng 
+                    <strong>zero-shot generalization</strong> tốt.
+                </p>
+            </div>
+
+            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 1.5rem;">
+                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">Kiến Trúc Mô Hình Depth Anything</h4>
+                <ul style="list-style-position: inside; line-height: 2; color: #333;">
+                    <li><strong>Backbone:</strong> DINOv2 ViT-Small (VITS) — Encoder mạnh mẽ với tính năng self-supervised learning</li>
+                    <li><strong>Decoder:</strong> Công thức tính độ sâu từ feature maps đa-level</li>
+                    <li><strong>Output:</strong> Single-channel depth map (grayscale) cùng kích thước với input</li>
+                    <li><strong>Ưu điểm:</strong> Không cần fine-tuning, hoạt động tốt trên ảnh đa dạng (indoor/outdoor, các tình huống phức tạp)</li>
                 </ul>
             </div>
-            <div class="solution-box">
-                <h4>Kỹ thuật Tối ưu hóa</h4>
-                <ul style="list-style-position: inside; line-height: 1.8;">
-                    <li><strong>Load Balancing:</strong> Repartition (40 tasks)</li>
-                    <li><strong>Throughput:</strong> Batch Size 32 (Max VRAM)</li>
-                    <li><strong>Stability:</strong> Random Sleep Desync (Chống nghẽn GPU)</li>
-                    <li><strong>Architecture:</strong> VITS Encoder (Speed/Accuracy)</li>
+
+            <div class="solution-box" style="margin-bottom: 1.5rem;">
+                <h4 style="color: #27ae60; margin-bottom: 0.8rem;">Quy Trình MapPartitions trong Spark</h4>
+                <p style="margin-bottom: 1rem;">
+                    Để xử lý <strong>100,000 ảnh</strong> trong thời gian hợp lý, chúng tôi sử dụng <strong>Apache Spark RDD.mapPartitions()</strong> 
+                    — một API cho phép xử lý dữ liệu theo <strong>partition level</strong> thay vì row-by-row:
+                </p>
+                <ol style="list-style-position: inside; line-height: 2; color: #333; margin-top: 1rem;">
+                    <li><strong>Repartition:</strong> Chia dữ liệu thành 40 partition (tương ứng số GPU cores)</li>
+                    <li><strong>Per-Partition GPU Setup:</strong> Mỗi partition khởi tạo mô hình Depth Anything trên GPU riêng</li>
+                    <li><strong>Batch Processing:</strong> Xử lý ảnh theo batch (kích thước 16 ảnh/batch) để tối ưu VRAM</li>
+                    <li><strong>Desync Logic:</strong> Thêm random sleep (0.5-3s) để tránh tranh chấp GPU khi khởi tạo</li>
+                    <li><strong>Output:</strong> Lưu depth map của mỗi ảnh thành file PNG (lossless)</li>
+                </ol>
+            </div>
+
+            <div style="background: #fff9e6; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #f39c12; margin-bottom: 1.5rem;">
+                <h4 style="color: #d68910; margin-bottom: 0.8rem;">Tối Ưu Hóa Hiệu Năng</h4>
+                <ul style="list-style-position: inside; line-height: 2; color: #333;">
+                    <li><strong>Batch Flushing:</strong> Xử lý batch 16 ảnh khi đủ, không chờ quá hạn để giảm latency</li>
+                    <li><strong>GPU Memory Management:</strong> Gọi <code>torch.cuda.empty_cache()</code> sau mỗi batch để tránh OOM</li>
+                    <li><strong>Retry Mechanism:</strong> Nếu GPU bận, tự động chờ 3-5s rồi thử lại (tolerance 3 lần)</li>
+                    <li><strong>Model Caching:</strong> Mô hình chỉ khởi tạo 1 lần per partition, không tái khởi tạo</li>
                 </ul>
+            </div>
+        </div>
+
+        <!-- ============ GIAI ĐOẠN 2: PREDICT/INFERENCE ============ -->
+        <div style="margin-bottom: 3rem;">
+            <h3 style="color: #27ae60; border-bottom: 3px solid #27ae60; padding-bottom: 1rem; margin-bottom: 2rem;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Giai Đoạn 2: Depth-Aware Editing (Inference)
+            </h3>
+
+            <div class="problem-box" style="margin-bottom: 1.5rem;">
+                <h4 style="color: #c0392b; margin-bottom: 0.8rem;">Mục Đích của Depth Information</h4>
+                <p>
+                    Khi đã có depth map từ giai đoạn 1, chúng ta sử dụng nó để <strong>hướng dẫn quá trình sinh ảnh</strong> (image generation) 
+                    thông qua ba module xử lý: <strong>DEGLAD, FEATGLAC, và Diffusion-based Synthesis</strong>. Mục tiêu cuối cùng là 
+                    <strong>chỉnh sửa ảnh theo hướng dẫn của text prompt, duy trì tính nhất quán 3D</strong> (depth, occlusion, lighting).
+                </p>
+            </div>
+
+            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 1.5rem;">
+                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">Module 1: DEGLAD (Depth-Guided Layer Decomposition)</h4>
+                <p style="margin-bottom: 1rem; color: #333;">
+                    <strong>Mục đích:</strong> Tách ảnh đầu vào thành hai thành phần độc lập: <strong>Tiền cảnh (Foreground)</strong> và 
+                    <strong>Hậu cảnh (Background)</strong> dựa vào thông tin depth.
+                </p>
+                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
+                    <li>Sử dụng depth map làm <strong>mask guidance</strong> để phân tách vật thể chính khỏi nền</li>
+                    <li>Vật thể có depth nhỏ (gần camera) → Foreground; depth lớn (xa camera) → Background</li>
+                    <li>Kết quả: 2 lớp ảnh riêng biệt có thể xử lý độc lập</li>
+                </ul>
+            </div>
+
+            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 1.5rem;">
+                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">Module 2: FEATGLAC (Feature-Guided Layer Composition)</h4>
+                <p style="margin-bottom: 1rem; color: #333;">
+                    <strong>Mục đích:</strong> Trích xuất <strong>features định tính</strong> (textures, colors, patterns) từ mỗi lớp 
+                    để giúp sinh ảnh có tính nhất quán.
+                </p>
+                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
+                    <li>Sử dụng DINOv2 hoặc CLIP để trích xuất feature vectors từ Foreground và Background</li>
+                    <li>Feature vectors này giúp điều khiển <strong>diffusion process</strong> để sinh ảnh sao cho khớp với style gốc</li>
+                    <li>Đảm bảo khi sinh ảnh, material, lighting được bảo toàn từng lớp</li>
+                </ul>
+            </div>
+
+            <div style="background: #fff9e6; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #f39c12; margin-bottom: 1.5rem;">
+                <h4 style="color: #d68910; margin-bottom: 0.8rem;">Module 3: Diffusion-based Image Synthesis</h4>
+                <p style="margin-bottom: 1rem; color: #333;">
+                    <strong>Mục đích:</strong> Sử dụng <strong>Latent Diffusion Model</strong> (Stable Diffusion) để sinh ảnh mới dựa trên 
+                    text prompt, đồng thời tuân thủ constraints từ depth và features.
+                </p>
+                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
+                    <li><strong>Text Conditioning:</strong> Prompt description được encode thành embedding vector</li>
+                    <li><strong>Depth Conditioning:</strong> Depth map được thêm vào latent space như một extra channel để hướng dẫn sinh ảnh</li>
+                    <li><strong>Feature Conditioning:</strong> Feature vectors từ FEATGLAC điều khiển texture synthesis</li>
+                    <li><strong>Iterative Denoising:</strong> Thực hiện T bước denoising (T ≈ 30-50) để tăng dần chất lượng ảnh</li>
+                    <li><strong>Output:</strong> Ảnh đã chỉnh sửa với nội dung mới nhưng giữ lại 3D consistency</li>
+                </ul>
+            </div>
+
+            <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #27ae60; margin-bottom: 1.5rem;">
+                <h4 style="color: #1b5e20; margin-bottom: 0.8rem;">Luồng Xử Lý Hoàn Chỉnh (End-to-End Pipeline)</h4>
+                <ol style="list-style-position: inside; line-height: 2; color: #333;">
+                    <li><strong>Input:</strong> Ảnh RGB + Text prompt</li>
+                    <li><strong>Depth Extraction:</strong> (Giai đoạn 1) → Depth map</li>
+                    <li><strong>Layer Decomposition:</strong> DEGLAD tách thành Foreground + Background</li>
+                    <li><strong>Feature Extraction:</strong> FEATGLAC trích xuất features từ 2 lớp</li>
+                    <li><strong>Multi-Conditioning Diffusion:</strong> Sinh ảnh mới với 3 guidance (Text + Depth + Features)</li>
+                    <li><strong>Output:</strong> Ảnh chỉnh sửa hoàn chỉnh</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- ============ CẤU HÌNH & TỐI ƯU ============ -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: #34495e; border-bottom: 3px solid #34495e; padding-bottom: 1rem; margin-bottom: 2rem;">
+                <i class="fa-solid fa-gear"></i> Cấu Hình Hệ Thống & Tối Ưu Hóa
+            </h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div class="solution-box">
+                    <h4><i class="fa-solid fa-server"></i> Cấu Hình Tài Nguyên (Kaggle)</h4>
+                    <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
+                        <li><strong>Cluster:</strong> Spark Local[2] Mode (2 Executors)</li>
+                        <li><strong>GPU:</strong> 2× NVIDIA Tesla T4 (16GB × 2)</li>
+                        <li><strong>CPU:</strong> 4 cores, Hyperthreaded</li>
+                        <li><strong>Driver Memory:</strong> 4GB</li>
+                        <li><strong>Executor Memory:</strong> 4GB</li>
+                        <li><strong>Max Result Size:</strong> 2GB</li>
+                    </ul>
+                </div>
+
+                <div class="solution-box">
+                    <h4><i class="fa-solid fa-bolt"></i> Kỹ Thuật Tối Ưu Hóa</h4>
+                    <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
+                        <li><strong>Repartition:</strong> 40 partitions → load balancing</li>
+                        <li><strong>Batch Size:</strong> 16 ảnh/batch (max VRAM 32GB shared)</li>
+                        <li><strong>Desync:</strong> Random sleep 0.5-3s (tránh GPU deadlock)</li>
+                        <li><strong>Retry Logic:</strong> 3 lần khởi tạo model, chờ 3-5s khi GPU busy</li>
+                        <li><strong>Architecture:</strong> ViT-Small (VITS) balance speed ↔ accuracy</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hình ảnh Pipeline -->
+        <div class="diagram-box" style="margin-top: 3rem;">
+            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fa-solid fa-diagram-project"></i> Sơ Đồ Pipeline Xử Lý
+            </h3>
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <img src="bigdata.jpg" alt="Big Data Pipeline Diagram" class="clickable-img" 
+                     style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s;">
             </div>
         </div>
     </div>
