@@ -1,5 +1,6 @@
 # Video Extraction Tool
 video_extraction/
+output/
 
 # Python
 __pycache__/
