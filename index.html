@@ -338,6 +338,22 @@
         .clickable-mermaid:hover {
             filter: brightness(0.95);
         }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #codeTitle:hover {
+            color: #3498db;
+        }
     </style>
 </head>
 <body>
@@ -445,144 +461,87 @@
             <div class="section-content" style="max-width: 100%; width: 100%;">
                 <h2>Các Thành Phần Cốt Lõi</h2>
                
-                <!-- Carousel Container -->
+                <!-- Tabbed Interface -->
                 <div style="position: relative; max-width: 100%; width: 100%; margin: 0 auto;">
-                    <div id="modelCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px; gap: 1rem;">
-                        
-                        <!-- Slide 1: Latent Diffusion Image -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Overall process</h3>
-                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="diffusionmodel.png" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Diffusion Model">
-                            </div>
+                    <!-- Tab Buttons -->
+                    <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid #ecf0f1; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <button class="model-tab-btn" onclick="showModelTab(0)" style="padding: 1rem 1.5rem; border: none; background: #3498db; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
+                            📊 Overall Process
+                        </button>
+                        <button class="model-tab-btn" onclick="showModelTab(1)" style="padding: 1rem 1.5rem; border: none; background: #95a5a6; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
+                            📐 Depth Estimation
+                        </button>
+                    </div>
+
+                    <!-- Tab 1: Overall Process -->
+                    <div class="model-tab-content" id="model-tab-0" style="display: flex; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
+                        <!-- Image Column -->
+                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
+                            <img src="diffusionmodel.png" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Overall Process">
                         </div>
-
-                        <!-- Slide 2: Latent Diffusion Diagram -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">1. Overall process</h3>
-                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
-                                flowchart LR
-    %% Làm mượt đường nối
-    linkStyle default interpolation basis
-
-    %% --- KHỐI 1: INPUTS (Được chia tầng để dây đi thẳng) ---
-    subgraph INPUTS ["1. INPUT PREPARATION"]
-        direction TB
-        
-        %% Tầng 1: Xử lý Reference (Thẳng hàng với U-Net)
-        subgraph L1 ["Reference Branch"]
-            direction LR
-            RefObj["Ref Object"] --> RefEnc["Ref Encoder<br/>(AnyDoor)"]
-        end
-
-        %% Tầng 2: Xử lý Depth (Thẳng hàng với DeGLaD)
-        subgraph L2 ["Depth Branch"]
-            direction LR
-            Scene1["Scene Image"] --> Depth["Depth Estimator"]
-            Thres["Threshold d"]
-        end
-
-        %% Tầng 3: Xử lý Latent gốc (Thẳng hàng với Blending)
-        subgraph L3 ["Latent Branch"]
-            direction LR
-            Scene2["Scene Image"] --> VAE["VAE Encoder"]
-        end
-    end
-
-    %% --- KHỐI 2: LOGIC & LOOP ---
-    subgraph PROCESS ["2. CORE LOGIC"]
-        direction LR
-        
-        %% DeGLaD nằm giữa làm cầu nối
-        DeGLaD["DeGLaD"]
-
-        %% Vòng lặp chính
-        subgraph LOOP ["Depth-Aware Loop"]
-            direction LR
-            InputNoise["Noise"] --> UNet["U-Net"]
-            UNet --> Scheduler["Scheduler"]
-            Scheduler --> Blending["Latent Blending"]
-            Blending --> Check{"Done?"}
-            Check -- "No" --> UNet
-        end
-    end
-
-    %% --- KHỐI 3: OUTPUT ---
-    subgraph OUT ["3. RESULT"]
-        VAE_Dec["VAE Decoder"] --> Final["Final Image"]
-    end
-
-    %% --- KẾT NỐI (Dây đi ngang, hạn chế chéo) ---
-    %% Dây trên cùng
-    RefEnc --> UNet
-    
-    %% Dây ở giữa
-    Depth --> DeGLaD
-    Thres --> DeGLaD
-    DeGLaD -- "Mask" --> Blending
-
-    %% Dây ở dưới
-    VAE --> Blending
-
-    %% Kết thúc
-    Check -- "Yes" --> VAE_Dec
-
-    %% --- STYLING ---
-    style INPUTS fill:#fff8dc,stroke:#daa520,color:#000
-    style LOOP fill:#e6f7ff,stroke:#0099ff,stroke-width:2px,color:#000
-    style Blending fill:#ffff99,stroke:#fbc02d,stroke-dasharray: 5 5,color:#000
-    style DeGLaD fill:#ffcc00,stroke:#333,color:#000
-    style L1 fill:#ffffff,stroke:none
-    style L2 fill:#ffffff,stroke:none
-    style L3 fill:#ffffff,stroke:none
+                        <!-- Text Column -->
+                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">End-to-End Pipeline</h3>
+                            <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">📥 Step 1: Input Preparation</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ Reference Object → AnyDoor Encoder → Feature embedding</li>
+                                    <li>✓ Scene Image → Depth Estimator → Depth map</li>
+                                    <li>✓ Scene Image → VAE Encoder → Latent representation</li>
+                                </ul>
                             </div>
-                        </div>
-
-                        <!-- Slide 3: Depth Estimation Image -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
-                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="depth.jpg" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="Depth Estimation">
+                            <div style="background: #f9f0ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #9b59b6; margin-bottom: 1rem;">
+                                <h4 style="color: #8e44ad; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Step 2: Iterative Denoising</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ U-Net removes noise iteratively</li>
+                                    <li>✓ DeGLaD mask guides FG/BG separation</li>
+                                    <li>✓ Latent blending based on depth</li>
+                                </ul>
                             </div>
-                        </div>
-
-                        <!-- Slide 4: Depth Estimation Diagram -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">2. Depth Estimation Module</h3>
-                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
-                                graph LR
-    subgraph PREP ["Preprocessing"]
-        A["Input Image (RGB)<br/>(H, W)"] --> B["Resize & Normalize<br/>(518, 518)"]
-    end
-
-    subgraph MODEL ["Depth Anything Model"]
-        B --> C["Encoder: DINOv2<br/>(Vision Transformer)"]
-        C --> D["DPT Decoder<br/>(Feature Fusion)"]
-        D --> E["Raw Depth Output<br/>(518, 518)"]
-    end
-
-    subgraph POST ["Post-processing"]
-        E --> F["Bilinear Interpolation<br/>(Resize to H, W)"]
-        F --> G["Normalize (0-255)"]
-        G --> H["Depth Map<br/>(Grayscale)"]
-    end
-
-    %% Styling
-    style C fill:#add8e6,stroke:#333,stroke-width:2px
-    style D fill:#add8e6,stroke:#333,stroke-width:2px
-    style H fill:#90ee90,stroke:#333,stroke-width:2px
+                            <div style="background: #fff0f5; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #e91e63;">
+                                <h4 style="color: #c2185b; margin-bottom: 0.7rem; font-size: 1rem;">📤 Step 3: Final Image</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ Latent → VAE Decoder → Output (512×512)</li>
+                                    <li>✓ Follows prompt + preserves depth</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Navigation -->
-                    <div style="text-align: center; margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
-                        <button onclick="document.getElementById('modelCarousel').scrollBy({left: -(window.innerWidth + 16), behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">◄ Trước</button>
-                        <span style="color: #666; font-size: 0.9rem;">Overall process Image • Overall process Diagram • Depth Image • Depth Diagram</span>
-                        <button onclick="document.getElementById('modelCarousel').scrollBy({left: window.innerWidth + 16, behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">Sau ►</button>
+                    <!-- Tab 2: Depth Estimation -->
+                    <div class="model-tab-content" id="model-tab-1" style="display: none; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
+                        <!-- Image Column -->
+                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
+                            <img src="depth.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Depth Estimation">
+                        </div>
+                        <!-- Text Column -->
+                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">Depth Anything Module</h3>
+                            <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">📊 Model</h4>
+                                <p style="margin: 0; color: #333; font-size: 0.9rem;">
+                                    Zero-shot depth estimator trained on millions of unlabeled images. Generalizes well across diverse scenes.
+                                </p>
+                            </div>
+                            <div style="background: #f9f0ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #9b59b6; margin-bottom: 1rem;">
+                                <h4 style="color: #8e44ad; margin-bottom: 0.7rem; font-size: 1rem;">🔍 Pipeline</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ <strong>Preprocessing:</strong> Resize → (518, 518)</li>
+                                    <li>✓ <strong>Encoder (DINOv2 ViT):</strong> Multi-level features</li>
+                                    <li>✓ <strong>Decoder (DPT):</strong> Progressive refinement</li>
+                                    <li>✓ <strong>Postprocessing:</strong> Output (H, W)</li>
+                                </ul>
+                            </div>
+                            <div style="background: #fff0f5; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #e91e63;">
+                                <h4 style="color: #c2185b; margin-bottom: 0.7rem; font-size: 1rem;">💡 Benefits</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ 3D Understanding: object distance</li>
+                                    <li>✓ Occlusion Handling: visibility</li>
+                                    <li>✓ Perspective Preservation: realism</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
                 </div>
             </div>
         </section>
@@ -592,115 +551,88 @@
             <div class="section-content">
                 <h2>Kiến Trúc Hệ Thống</h2>
                
-                <!-- Carousel Container -->
+                <!-- Tabbed Interface -->
                 <div style="position: relative; max-width: 100%; width: 100%; margin: 0 auto;">
-                    <div id="archCarousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 12px; gap: 1rem;">
-                        
-                        <!-- Slide 1: DeGLaD Image -->
-                        <div style="width: 100%; flex-shrink: 0; scroll-snap-align: start; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">a) DeGLaD: Depth-Guided Layer Decomposition</h3>
-                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="deglad.jpg" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="DeGLaD Diagram">
-                            </div>
-                        </div>
+                    <!-- Tab Buttons -->
+                    <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid #ecf0f1; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <button class="arch-tab-btn" onclick="showArchTab(0)" style="padding: 1rem 1.5rem; border: none; background: #27ae60; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
+                            🔵 DeGLaD
+                        </button>
+                        <button class="arch-tab-btn" onclick="showArchTab(1)" style="padding: 1rem 1.5rem; border: none; background: #95a5a6; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
+                            🟡 FeatGLaC
+                        </button>
+                    </div>
 
-                        <!-- Slide 2: DeGLaD Diagram -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">a) DeGLaD: Flow Diagram</h3>
-                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
-graph LR
-    subgraph INPUTS ["Inputs"]
-        D_Map["Depth Map Z"]
-        Thres["Threshold d"]
-    end
-    
-    subgraph LOGIC ["Layer Decomposition"]
-        Compare["Compare"]
-        Morph["Morphological Ops"]
-    end
-    
-    subgraph MASKS ["Output Masks"]
-        Mfg["Foreground Mask M_fg"]
-        Mbg["Background Mask M_bg"]
-    end
-    
-    D_Map --> Compare
-    Thres --> Compare
-    
-    Compare -- "z < d" --> Mfg
-    Compare -- "z > d" --> Mbg
-    
-    Mfg --> Morph
-    Mbg --> Morph
-    
-    style LOGIC fill:#fff4e6,stroke:#f96,stroke-width:2px
-    style MASKS fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-                            </div>
+                    <!-- Tab 1: DeGLaD -->
+                    <div class="arch-tab-content" id="arch-tab-0" style="display: flex; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
+                        <!-- Image Column -->
+                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
+                            <img src="deglad.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="DeGLaD">
                         </div>
-
-                        <!-- Slide 3: FeatGLaC Image -->
-                        <div style="width: 100%; flex-shrink: 0; scroll-snap-align: start; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">b) FeatGLaC: Feature-Guided Layer Compositing</h3>
-                            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex: 1;">
-                                <img src="featglac.jpg" class="clickable-img" style="max-width: 80%; height: auto; border-radius: 8px;" alt="FeatGLaC">
+                        <!-- Text Column -->
+                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">DeGLaD: Layer Decomposition</h3>
+                            <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">🎯 Purpose</h4>
+                                <p style="margin: 0; color: #333; font-size: 0.9rem;">
+                                    Use depth map to separate image into Foreground (near objects) and Background (distant areas).
+                                </p>
                             </div>
-                        </div>
 
-                        <!-- Slide 4: FeatGLaC Diagram -->
-                        <div style="width: 100%; scroll-snap-align: start; flex-shrink: 0; padding: 2rem; background: white; border-radius: 12px; min-height: 85vh; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.5rem; font-weight: bold;">b) FeatGLaC: Flow Diagram</h3>
-                            <div class="mermaid clickable-mermaid" style="font-size: 14px;">
-graph LR
-    subgraph INPUTS ["Inputs"]
-        FG["Foreground Layer"]
-        BG["Background Layer"]
-        Noise["Random Noise"]
-    end
-    
-    subgraph GUIDANCE ["Guidance Branch"]
-        VAE1["VAE Encoder"]
-        GUNET["Guidance U-Net"]
-        EXTRACT["Extract K, V<br/>Features"]
-    end
-    
-    subgraph GENERATION ["Generation Branch"]
-        GSTART["Latent Noise"]
-        GNET["Generation U-Net"]
-        INJECT["Feature Injection<br/>per Step"]
-    end
-    
-    subgraph DECODE ["Decoding"]
-        VAE2["VAE Decoder"]
-    end
-    
-    subgraph OUTPUT ["Output"]
-        Result["Composited<br/>Image"]
-    end
-    
-    FG --> VAE1
-    BG --> GSTART
-    Noise --> GSTART
-    VAE1 --> GUNET
-    GUNET --> EXTRACT
-    EXTRACT --> INJECT
-    GSTART --> GNET
-    INJECT --> GNET
-    GNET --> VAE2
-    VAE2 --> Result
-    
-    style GUIDANCE fill:#d4e6f7,stroke:#3498db,stroke-width:2px
-    style GENERATION fill:#fff4e6,stroke:#f96,stroke-width:2px
-    style DECODE fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-    style Result fill:#d5f4e6,stroke:#27ae60,stroke-width:2px
+                            <div style="background: #fff9e6; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #f39c12; margin-bottom: 1rem;">
+                                <h4 style="color: #d68910; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Process</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ <strong>Threshold:</strong> Compare Z(x,y) with depth threshold d</li>
+                                    <li>✓ <strong>Morphological:</strong> Erosion/dilation for cleanup</li>
+                                    <li>✓ <strong>Output:</strong> M_fg, M_bg masks</li>
+                                </ul>
+                            </div>
+
+                            <div style="background: #e8f5e9; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #27ae60;">
+                                <h4 style="color: #1b5e20; margin-bottom: 0.7rem; font-size: 1rem;">✨ Applications</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ Add new object: regenerate FG only</li>
+                                    <li>✓ Change background: regenerate BG only</li>
+                                    <li>✓ Maintains 3D consistency</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Navigation -->
-                    <div style="text-align: center; margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
-                        <button onclick="document.getElementById('archCarousel').scrollBy({left: -(window.innerWidth + 16), behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">◄ Trước</button>
-                        <span style="color: #666; font-size: 0.9rem;">4 slides (DeGLaD + FeatGLaC)</span>
-                        <button onclick="document.getElementById('archCarousel').scrollBy({left: window.innerWidth + 16, behavior: 'smooth'})" style="background: #3498db; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;">Sau ►</button>
+
+                    <!-- Tab 2: FeatGLaC -->
+                    <div class="arch-tab-content" id="arch-tab-1" style="display: none; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
+                        <!-- Image Column -->
+                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
+                            <img src="featglac.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="FeatGLaC">
+                        </div>
+                        <!-- Text Column -->
+                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">FeatGLaC: Feature Compositing</h3>
+                            <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">🎯 Purpose</h4>
+                                <p style="margin: 0; color: #333; font-size: 0.9rem;">
+                                    Extract features (textures, colors) from FG/BG to guide image generation with consistent style.
+                                </p>
+                            </div>
+
+                            <div style="background: #fff9e6; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #f39c12; margin-bottom: 1rem;">
+                                <h4 style="color: #d68910; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Parallel Branches</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ <strong>Guidance:</strong> VAE encodes FG/BG → K, V embeddings</li>
+                                    <li>✓ <strong>Generation:</strong> U-Net denoises from noise (30-50 steps)</li>
+                                    <li>✓ <strong>Cross-Attention:</strong> Injects reference features</li>
+                                </ul>
+                            </div>
+
+                            <div style="background: #e8f5e9; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #27ae60;">
+                                <h4 style="color: #1b5e20; margin-bottom: 0.7rem; font-size: 1rem;">✨ Benefits</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
+                                    <li>✓ Texture Consistency: reuses original patterns</li>
+                                    <li>✓ Color Harmony: matches ambient colors</li>
+                                    <li>✓ Lighting Match: respects illumination</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -709,240 +641,213 @@ graph LR
         <!-- SECTION 4: BIG DATA -->
 <section id="bigdata">
     <div class="section-content">
-        <h2>Xử Lý Big Data & Tính Toán GPU Phân Tán</h2>
+        <h2>Xử Lý Big Data & GPU Phân Tán</h2>
         
-        <!-- Giới Thiệu Chung -->
-        <div class="solution-box" style="margin-bottom: 3rem;">
-            <h3><i class="fa-solid fa-database"></i> Tổng Quan Thách Thức</h3>
-            <p>
-                Ứng dụng xử lý ảnh <strong>Depth-Aware Editing</strong> phải đối mặt với thách thức về khối lượng dữ liệu lớn (~<strong>10GB, ~100,000 files</strong>) 
-                và yêu cầu tính toán cao từ mô hình <strong>Depth Anything (VITS)</strong>. Để giải quyết, chúng tôi xây dựng một <strong>pipeline xử lý song song</strong> 
-                (parallel processing) sử dụng <strong>Apache Spark</strong> kết hợp với <strong>Multi-GPU Acceleration</strong> trên Kaggle Notebook.
-            </p>
-        </div>
-
-        <!-- ============ GIAI ĐOẠN 1: TRAIN/PREPARATION ============ -->
+        <!-- ============ GIAI ĐOẠN 1 ============ -->
         <div style="margin-bottom: 3rem;">
             <h3 style="color: #2980b9; border-bottom: 3px solid #2980b9; padding-bottom: 1rem; margin-bottom: 2rem;">
-                <i class="fa-solid fa-brain"></i> Giai Đoạn 1: Chuẩn Bị Dữ Liệu (Depth Map Extraction)
+                <i class="fa-solid fa-brain"></i> Giai Đoạn 1: Depth Map Extraction (Training)
             </h3>
 
             <div class="problem-box" style="margin-bottom: 1.5rem;">
-                <h4 style="color: #c0392b; margin-bottom: 0.8rem;">Bài Toán Depth Estimation</h4>
-                <p>
-                    Đầu tiên, chúng ta cần <strong>ước tính độ sâu (depth map)</strong> cho mỗi ảnh đầu vào. Đây là quá trình xác định khoảng cách 
-                    của mỗi pixel từ camera, là dữ liệu nền tảng cho <strong>Depth-Aware Editing</strong>. Sử dụng mô hình 
-                    <strong>Depth Anything</strong> — một mô hình pre-trained được huấn luyện trên dataset lớn với khả năng 
-                    <strong>zero-shot generalization</strong> tốt.
-                </p>
+                <h4 style="color: #c0392b; margin-bottom: 0.8rem;">📌 Bài Toán</h4>
+                <p>Xử lý 100,000 ảnh (~10GB) để tính depth map bằng mô hình <strong>Depth Anything</strong> trên multi-GPU Kaggle.</p>
             </div>
 
             <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 1.5rem;">
-                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">Kiến Trúc Mô Hình Depth Anything</h4>
-                <ul style="list-style-position: inside; line-height: 2; color: #333;">
-                    <li><strong>Backbone:</strong> DINOv2 ViT-Small (VITS) — Encoder mạnh mẽ với tính năng self-supervised learning</li>
-                    <li><strong>Decoder:</strong> Công thức tính độ sâu từ feature maps đa-level</li>
-                    <li><strong>Output:</strong> Single-channel depth map (grayscale) cùng kích thước với input</li>
-                    <li><strong>Ưu điểm:</strong> Không cần fine-tuning, hoạt động tốt trên ảnh đa dạng (indoor/outdoor, các tình huống phức tạp)</li>
+                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">🔧 Giải Pháp: Spark MapPartitions</h4>
+                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
+                    <li><strong>Repartition:</strong> 40 partitions → load balancing trên 2 GPU</li>
+                    <li><strong>Per-Partition Model:</strong> Mỗi GPU khởi tạo 1 model Depth Anything</li>
+                    <li><strong>Batch Processing:</strong> 16 ảnh/batch → tối ưu VRAM</li>
+                    <li><strong>Desync:</strong> Random sleep 0.5-3s tránh GPU deadlock</li>
+                    <li><strong>Output:</strong> Depth map PNG lossless cho mỗi ảnh</li>
                 </ul>
             </div>
 
-            <div class="solution-box" style="margin-bottom: 1.5rem;">
-                <h4 style="color: #27ae60; margin-bottom: 0.8rem;">Quy Trình MapPartitions trong Spark</h4>
-                <p style="margin-bottom: 1rem;">
-                    Để xử lý <strong>100,000 ảnh</strong> trong thời gian hợp lý, chúng tôi sử dụng <strong>Apache Spark RDD.mapPartitions()</strong> 
-                    — một API cho phép xử lý dữ liệu theo <strong>partition level</strong> thay vì row-by-row:
-                </p>
-                <ol style="list-style-position: inside; line-height: 2; color: #333; margin-top: 1rem;">
-                    <li><strong>Repartition:</strong> Chia dữ liệu thành 40 partition (tương ứng số GPU cores)</li>
-                    <li><strong>Per-Partition GPU Setup:</strong> Mỗi partition khởi tạo mô hình Depth Anything trên GPU riêng</li>
-                    <li><strong>Batch Processing:</strong> Xử lý ảnh theo batch (kích thước 16 ảnh/batch) để tối ưu VRAM</li>
-                    <li><strong>Desync Logic:</strong> Thêm random sleep (0.5-3s) để tránh tranh chấp GPU khi khởi tạo</li>
-                    <li><strong>Output:</strong> Lưu depth map của mỗi ảnh thành file PNG (lossless)</li>
-                </ol>
-            </div>
-
-            <div style="background: #fff9e6; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #f39c12; margin-bottom: 1.5rem;">
-                <h4 style="color: #d68910; margin-bottom: 0.8rem;">Tối Ưu Hóa Hiệu Năng</h4>
-                <ul style="list-style-position: inside; line-height: 2; color: #333;">
-                    <li><strong>Batch Flushing:</strong> Xử lý batch 16 ảnh khi đủ, không chờ quá hạn để giảm latency</li>
-                    <li><strong>GPU Memory Management:</strong> Gọi <code>torch.cuda.empty_cache()</code> sau mỗi batch để tránh OOM</li>
-                    <li><strong>Retry Mechanism:</strong> Nếu GPU bận, tự động chờ 3-5s rồi thử lại (tolerance 3 lần)</li>
-                    <li><strong>Model Caching:</strong> Mô hình chỉ khởi tạo 1 lần per partition, không tái khởi tạo</li>
-                </ul>
+            <!-- Hình ảnh Stage 1 -->
+            <div style="text-align: center; margin-top: 1.5rem; margin-bottom: 2rem;">
+                <img src="bigdata1.jpg" alt="Stage 1 Training" class="clickable-img" 
+                     style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s;">
             </div>
         </div>
 
-        <!-- ============ GIAI ĐOẠN 2: PREDICT/INFERENCE ============ -->
-        <div style="margin-bottom: 3rem;">
+        <!-- ============ GIAI ĐOẠN 2 ============ -->
+        <div style="margin-bottom: 2rem;">
             <h3 style="color: #27ae60; border-bottom: 3px solid #27ae60; padding-bottom: 1rem; margin-bottom: 2rem;">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Giai Đoạn 2: Depth-Aware Editing (Inference)
             </h3>
 
             <div class="problem-box" style="margin-bottom: 1.5rem;">
-                <h4 style="color: #c0392b; margin-bottom: 0.8rem;">Mục Đích của Depth Information</h4>
-                <p>
-                    Khi đã có depth map từ giai đoạn 1, chúng ta sử dụng nó để <strong>hướng dẫn quá trình sinh ảnh</strong> (image generation) 
-                    thông qua ba module xử lý: <strong>DEGLAD, FEATGLAC, và Diffusion-based Synthesis</strong>. Mục tiêu cuối cùng là 
-                    <strong>chỉnh sửa ảnh theo hướng dẫn của text prompt, duy trì tính nhất quán 3D</strong> (depth, occlusion, lighting).
-                </p>
+                <h4 style="color: #c0392b; margin-bottom: 0.8rem;">📌 Mục Đích</h4>
+                <p>Sử dụng depth map từ Giai Đoạn 1 để hướng dẫn quá trình sinh ảnh qua 3 module: <strong>DEGLAD, FEATGLAC, Diffusion</strong>.</p>
             </div>
 
-            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 1.5rem;">
-                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">Module 1: DEGLAD (Depth-Guided Layer Decomposition)</h4>
-                <p style="margin-bottom: 1rem; color: #333;">
-                    <strong>Mục đích:</strong> Tách ảnh đầu vào thành hai thành phần độc lập: <strong>Tiền cảnh (Foreground)</strong> và 
-                    <strong>Hậu cảnh (Background)</strong> dựa vào thông tin depth.
-                </p>
-                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
-                    <li>Sử dụng depth map làm <strong>mask guidance</strong> để phân tách vật thể chính khỏi nền</li>
-                    <li>Vật thể có depth nhỏ (gần camera) → Foreground; depth lớn (xa camera) → Background</li>
-                    <li>Kết quả: 2 lớp ảnh riêng biệt có thể xử lý độc lập</li>
-                </ul>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #3498db;">
+                    <h5 style="color: #2980b9; margin-bottom: 0.6rem;">🔵 DEGLAD</h5>
+                    <p style="margin: 0; font-size: 0.9rem; color: #333;">Tách ảnh thành Foreground + Background dựa depth mask</p>
+                </div>
+                <div style="background: #fff9e6; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #f39c12;">
+                    <h5 style="color: #d68910; margin-bottom: 0.6rem;">🟡 FEATGLAC</h5>
+                    <p style="margin: 0; font-size: 0.9rem; color: #333;">Trích feature (texture, color) từ mỗi lớp</p>
+                </div>
+                <div style="background: #e8f5e9; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #27ae60;">
+                    <h5 style="color: #1b5e20; margin-bottom: 0.6rem;">🟢 Diffusion</h5>
+                    <p style="margin: 0; font-size: 0.9rem; color: #333;">Sinh ảnh với text + depth + feature guidance</p>
+                </div>
             </div>
 
-            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 1.5rem;">
-                <h4 style="color: #2980b9; margin-bottom: 0.8rem;">Module 2: FEATGLAC (Feature-Guided Layer Composition)</h4>
-                <p style="margin-bottom: 1rem; color: #333;">
-                    <strong>Mục đích:</strong> Trích xuất <strong>features định tính</strong> (textures, colors, patterns) từ mỗi lớp 
-                    để giúp sinh ảnh có tính nhất quán.
-                </p>
-                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
-                    <li>Sử dụng DINOv2 hoặc CLIP để trích xuất feature vectors từ Foreground và Background</li>
-                    <li>Feature vectors này giúp điều khiển <strong>diffusion process</strong> để sinh ảnh sao cho khớp với style gốc</li>
-                    <li>Đảm bảo khi sinh ảnh, material, lighting được bảo toàn từng lớp</li>
-                </ul>
-            </div>
-
-            <div style="background: #fff9e6; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #f39c12; margin-bottom: 1.5rem;">
-                <h4 style="color: #d68910; margin-bottom: 0.8rem;">Module 3: Diffusion-based Image Synthesis</h4>
-                <p style="margin-bottom: 1rem; color: #333;">
-                    <strong>Mục đích:</strong> Sử dụng <strong>Latent Diffusion Model</strong> (Stable Diffusion) để sinh ảnh mới dựa trên 
-                    text prompt, đồng thời tuân thủ constraints từ depth và features.
-                </p>
-                <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
-                    <li><strong>Text Conditioning:</strong> Prompt description được encode thành embedding vector</li>
-                    <li><strong>Depth Conditioning:</strong> Depth map được thêm vào latent space như một extra channel để hướng dẫn sinh ảnh</li>
-                    <li><strong>Feature Conditioning:</strong> Feature vectors từ FEATGLAC điều khiển texture synthesis</li>
-                    <li><strong>Iterative Denoising:</strong> Thực hiện T bước denoising (T ≈ 30-50) để tăng dần chất lượng ảnh</li>
-                    <li><strong>Output:</strong> Ảnh đã chỉnh sửa với nội dung mới nhưng giữ lại 3D consistency</li>
-                </ul>
-            </div>
-
-            <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #27ae60; margin-bottom: 1.5rem;">
-                <h4 style="color: #1b5e20; margin-bottom: 0.8rem;">Luồng Xử Lý Hoàn Chỉnh (End-to-End Pipeline)</h4>
-                <ol style="list-style-position: inside; line-height: 2; color: #333;">
-                    <li><strong>Input:</strong> Ảnh RGB + Text prompt</li>
-                    <li><strong>Depth Extraction:</strong> (Giai đoạn 1) → Depth map</li>
-                    <li><strong>Layer Decomposition:</strong> DEGLAD tách thành Foreground + Background</li>
-                    <li><strong>Feature Extraction:</strong> FEATGLAC trích xuất features từ 2 lớp</li>
-                    <li><strong>Multi-Conditioning Diffusion:</strong> Sinh ảnh mới với 3 guidance (Text + Depth + Features)</li>
-                    <li><strong>Output:</strong> Ảnh chỉnh sửa hoàn chỉnh</li>
+            <div style="background: #fff9e6; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #f39c12;">
+                <h4 style="color: #d68910; margin-bottom: 0.8rem;">⚙️ End-to-End Pipeline</h4>
+                <ol style="margin: 0; padding-left: 1.5rem; color: #333; font-size: 0.95rem; line-height: 1.8;">
+                    <li>Input: RGB ảnh + text prompt</li>
+                    <li>Depth Extraction → Depth map (từ Giai Đoạn 1)</li>
+                    <li>DEGLAD tách Foreground/Background</li>
+                    <li>FEATGLAC trích features từ 2 lớp</li>
+                    <li>Diffusion sinh ảnh mới (text + depth + features)</li>
+                    <li>Output: Ảnh chỉnh sửa với 3D consistency</li>
                 </ol>
             </div>
-        </div>
 
-        <!-- ============ CẤU HÌNH & TỐI ƯU ============ -->
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: #34495e; border-bottom: 3px solid #34495e; padding-bottom: 1rem; margin-bottom: 2rem;">
-                <i class="fa-solid fa-gear"></i> Cấu Hình Hệ Thống & Tối Ưu Hóa
-            </h3>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                <div class="solution-box">
-                    <h4><i class="fa-solid fa-server"></i> Cấu Hình Tài Nguyên (Kaggle)</h4>
-                    <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
-                        <li><strong>Cluster:</strong> Spark Local[2] Mode (2 Executors)</li>
-                        <li><strong>GPU:</strong> 2× NVIDIA Tesla T4 (16GB × 2)</li>
-                        <li><strong>CPU:</strong> 4 cores, Hyperthreaded</li>
-                        <li><strong>Driver Memory:</strong> 4GB</li>
-                        <li><strong>Executor Memory:</strong> 4GB</li>
-                        <li><strong>Max Result Size:</strong> 2GB</li>
-                    </ul>
-                </div>
-
-                <div class="solution-box">
-                    <h4><i class="fa-solid fa-bolt"></i> Kỹ Thuật Tối Ưu Hóa</h4>
-                    <ul style="list-style-position: inside; line-height: 1.8; color: #333;">
-                        <li><strong>Repartition:</strong> 40 partitions → load balancing</li>
-                        <li><strong>Batch Size:</strong> 16 ảnh/batch (max VRAM 32GB shared)</li>
-                        <li><strong>Desync:</strong> Random sleep 0.5-3s (tránh GPU deadlock)</li>
-                        <li><strong>Retry Logic:</strong> 3 lần khởi tạo model, chờ 3-5s khi GPU busy</li>
-                        <li><strong>Architecture:</strong> ViT-Small (VITS) balance speed ↔ accuracy</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Hình ảnh Pipeline -->
-        <div class="diagram-box" style="margin-top: 3rem;">
-            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 2rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fa-solid fa-diagram-project"></i> Sơ Đồ Pipeline Xử Lý
-            </h3>
-            <div style="text-align: center; margin-top: 1.5rem;">
-                <img src="bigdata.jpg" alt="Big Data Pipeline Diagram" class="clickable-img" 
+            <!-- Hình ảnh Stage 2 -->
+            <div style="text-align: center; margin-top: 2rem;">
+                <img src="bigdata.jpg" alt="Stage 2 Pipeline" class="clickable-img" 
                      style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s;">
             </div>
         </div>
     </div>
-</section>    
-<section id="references">
-            <div class="section-content">
-                <h2>Tài Liệu Tham Khảo</h2>
-                
-                <div class="solution-box" style="background: white; border-left: 5px solid #34495e;">
-                    <h3><i class="fa-solid fa-quote-right"></i> Các Nghiên Cứu Nền Tảng</h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
-                        
-                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-                            <strong style="color: #2c3e50;">[1] Depth Anything Module</strong>
-                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
-                                Lihe Young et al., <em>"Depth Anything: Unleashing the Power of Large-Scale Unlabeled Data,"</em> CVPR 2024. 
-                                <br/>
-                                <a href="https://github.com/LiheYoung/Depth-Anything" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
-                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo (Official) ➔
-                                </a>
-                            </p>
-                        </div>
+</section>
 
-                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-                            <strong style="color: #2c3e50;">[2] Latent Diffusion Models (Stable Diffusion)</strong>
-                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
-                                Robin Rombach et al., <em>"High-Resolution Image Synthesis with Latent Diffusion Models,"</em> CVPR 2022.
-                                <br/>
-                                <a href="https://github.com/CompVis/latent-diffusion" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
-                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo ➔
-                                </a>
-                            </p>
-                        </div>
-
-                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-                            <strong style="color: #2c3e50;">[3] DINOv2 Backbone</strong>
-                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
-                                Maxime Oquab et al., <em>"DINOv2: Learning Robust Visual Features without Supervision,"</em> arXiv 2023.
-                                <br/>
-                                <a href="https://github.com/facebookresearch/dinov2" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
-                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo ➔
-                                </a>
-                            </p>
-                        </div>
-
-                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-                            <strong style="color: #2c3e50;">[4] Zero-Shot Image Editing (pix2pix-zero)</strong>
-                            <p style="font-size: 0.9rem; margin-top: 0.3rem;">
-                                Gaurav Parmar et al., <em>"Zero-Shot Image-to-Image Translation,"</em> SIGGRAPH 2023.
-                                <br/>
-                                <a href="https://github.com/pix2pixzero/pix2pix-zero" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
-                                    <i class="fa-brands fa-github"></i> Xem GitHub Repo (Official) ➔
-                                </a>
-                            </p>
-                        </div>
-
-                    </div>
+<!-- SECTION 5: INTERACTIVE CODE -->
+<section id="code">
+    <div class="section-content">
+        <h2 id="codeTitle" style="cursor: pointer; user-select: none; transition: color 0.3s; margin-bottom: 0;">
+            📋 Mã Nguồn & Thực Hiện
+        </h2>
+        
+        <!-- Code Demo Container - Below Title, Full Width -->
+        <div id="codeContainer" style="
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease;
+            opacity: 0;
+            margin-top: 1rem;
+        ">
+            <!-- Code Snippet - MapReduce run_job() -->
+            <div id="codeSnippet" style="background: #2c3e50; padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem; animation: slideInUp 0.6s ease 0.1s forwards; opacity: 0; transition: transform 0.3s, box-shadow 0.3s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="color: white; margin: 0; font-size: 1.05rem;">
+                        🔍 MapReduce Job - run_job() Function
+                    </h4>
+                    <button onclick="window.open('https://www.kaggle.com/code/hongtptrai/big-data', '_blank');" style="background: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background 0.3s;">
+                        🔗 View on Kaggle
+                    </button>
                 </div>
+                <pre style="background: #1a252f; color: #a8e6cf; padding: 1.5rem; border-radius: 8px; overflow-x: auto; font-size: 0.7rem; line-height: 1.4; margin: 0;">
+<span style="color: #ffd3b6;">def</span> <span style="color: #ffadb5;">run_job</span>():    
+    <span style="color: #ffd3b6;">import</span> random
+    <span style="color: #ffd3b6;">from</span> pyspark.sql <span style="color: #ffd3b6;">import</span> SparkSession
+    <span style="color: #ffd3b6;">from</span> pyspark.sql.functions <span style="color: #ffd3b6;">import</span> col    
+    <span style="color: #ffd3b6;">try</span>: SparkSession.getActiveSession().stop()
+    <span style="color: #ffd3b6;">except</span>: <span style="color: #ffd3b6;">pass</span>
+
+    spark = SparkSession.builder \
+        .master(<span style="color: #a8d8ea;">"local[2]"</span>) \
+        .appName(<span style="color: #a8d8ea;">"Depth_Inference_Test_Set"</span>) \
+        .config(<span style="color: #a8d8ea;">"spark.driver.memory"</span>, <span style="color: #a8d8ea;">"4g"</span>) \
+        .config(<span style="color: #a8d8ea;">"spark.executor.memory"</span>, <span style="color: #a8d8ea;">"4g"</span>) \
+        .getOrCreate()
+    
+    df = spark.read.format(<span style="color: #a8d8ea;">"binaryFile"</span>) \
+        .load(CONFIG_INPUT) \
+        .filter(col(<span style="color: #a8d8ea;">"path"</span>).like(<span style="color: #a8d8ea;">"%_colors.png"</span>))
+    
+    NUM_PARTITIONS = 20 
+    partitioned_rdd = df.rdd.map(...).partitionBy(NUM_PARTITIONS)
+    
+    <span style="color: #ffd3b6;">try</span>:
+        count = partitioned_rdd.mapPartitions(reduce_process_partition).count()
+        <span style="color: #ffd3b6;">print</span>(<span style="color: #a8d8ea;">f"✅ Processed: {count} images"</span>)
+    <span style="color: #ffd3b6;">except</span> Exception <span style="color: #ffd3b6;">as</span> e:
+        <span style="color: #ffd3b6;">print</span>(<span style="color: #a8d8ea;">f"❌ JOB FAILED: {e}"</span>)
+    
+    spark.stop()
+                </pre>
             </div>
-        </section>
-        </main>
+
+            <!-- Key Points Box -->
+            <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; border-left: 5px solid #3498db; animation: slideInUp 0.6s ease 0.2s forwards; opacity: 0;">
+                <h4 style="color: #2980b9; margin-bottom: 0.8rem; margin-top: 0;">💡 Implementation Details</h4>
+                <ul style="margin: 0; padding-left: 1.5rem; color: #333; line-height: 1.8; font-size: 0.95rem;">
+                    <li><strong>Handle Missing Images:</strong> Fallback to zeros if image load fails</li>
+                    <li><strong>RGB Conversion:</strong> BGR → RGB (OpenCV uses BGR by default)</li>
+                    <li><strong>Depth Normalization:</strong> NYU dataset (mm scale) → 0-1 range to prevent loss explosion</li>
+                    <li><strong>Transform & Return:</strong> Apply ImageNet transforms, return (image_tensor, depth_tensor) pair</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- SECTION 6: REFERENCES -->
+<section id="references">
+    <div class="section-content">
+        <h2>Tài Liệu Tham Khảo</h2>
+        
+        <div class="solution-box" style="background: white; border-left: 5px solid #34495e;">
+            <h3><i class="fa-solid fa-quote-right"></i> Các Nghiên Cứu Nền Tảng</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                
+                <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                    <strong style="color: #2c3e50;">[1] Depth Anything Module</strong>
+                    <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                        Lihe Young et al., <em>"Depth Anything: Unleashing the Power of Large-Scale Unlabeled Data,"</em> CVPR 2024. 
+                        <br/>
+                        <a href="https://github.com/LiheYoung/Depth-Anything" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                            <i class="fa-brands fa-github"></i> Xem GitHub Repo (Official) ➔
+                        </a>
+                    </p>
+                </div>
+
+                <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                    <strong style="color: #2c3e50;">[2] Latent Diffusion Models (Stable Diffusion)</strong>
+                    <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                        Robin Rombach et al., <em>"High-Resolution Image Synthesis with Latent Diffusion Models,"</em> CVPR 2022.
+                        <br/>
+                        <a href="https://github.com/CompVis/latent-diffusion" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                            <i class="fa-brands fa-github"></i> Xem GitHub Repo ➔
+                        </a>
+                    </p>
+                </div>
+
+                <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                    <strong style="color: #2c3e50;">[3] DINOv2 Backbone</strong>
+                    <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                        Maxime Oquab et al., <em>"DINOv2: Learning Robust Visual Features without Supervision,"</em> arXiv 2023.
+                        <br/>
+                        <a href="https://github.com/facebookresearch/dinov2" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                            <i class="fa-brands fa-github"></i> Xem GitHub Repo ➔
+                        </a>
+                    </p>
+                </div>
+
+                <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+                    <strong style="color: #2c3e50;">[4] Zero-Shot Image Editing (pix2pix-zero)</strong>
+                    <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+                        Gaurav Parmar et al., <em>"Zero-Shot Image-to-Image Translation,"</em> SIGGRAPH 2023.
+                        <br/>
+                        <a href="https://github.com/pix2pixzero/pix2pix-zero" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                            <i class="fa-brands fa-github"></i> Xem GitHub Repo (Official) ➔
+                        </a>
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
 
     <footer id="implementation">
         <h3>Zero-Shot Depth-Aware Image Editing</h3>
@@ -1090,6 +995,75 @@ graph LR
                 });
             });
         });
+    </script>
+
+    <!-- ===== CODE SECTION INTERACTIONS ===== -->
+    <script>
+        let codeRevealed = false;
+        const codeTitle = document.getElementById('codeTitle');
+        const codeContainer = document.getElementById('codeContainer');
+        
+        function toggleCode() {
+            codeRevealed = !codeRevealed;
+            if (codeRevealed) {
+                codeContainer.style.maxHeight = '1000px';
+                codeContainer.style.opacity = '1';
+            } else {
+                codeContainer.style.maxHeight = '0';
+                codeContainer.style.opacity = '0';
+            }
+        }
+        
+        // Hover to show
+        if (codeTitle) {
+            codeTitle.addEventListener('mouseenter', function() {
+                codeContainer.style.maxHeight = '1000px';
+                codeContainer.style.opacity = '1';
+            });
+            
+            // Click to toggle sticky
+            codeTitle.addEventListener('click', toggleCode);
+        }
+        
+        // Leave to hide (unless clicked)
+        const codeSection = document.getElementById('code');
+        if (codeSection) {
+            codeSection.addEventListener('mouseleave', function() {
+                if (!codeRevealed) {
+                    codeContainer.style.maxHeight = '0';
+                    codeContainer.style.opacity = '0';
+                }
+            });
+        }
+
+        // ===== TAB SWITCHING FUNCTIONS =====
+        function showModelTab(tabIndex) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.model-tab-content');
+            tabs.forEach(tab => tab.style.display = 'none');
+            
+            // Show selected tab
+            document.getElementById(`model-tab-${tabIndex}`).style.display = 'flex';
+            
+            // Update button styles
+            const buttons = document.querySelectorAll('.model-tab-btn');
+            buttons.forEach(btn => btn.style.background = '#95a5a6');
+            buttons[tabIndex].style.background = '#3498db';
+        }
+
+        function showArchTab(tabIndex) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.arch-tab-content');
+            tabs.forEach(tab => tab.style.display = 'none');
+            
+            // Show selected tab
+            document.getElementById(`arch-tab-${tabIndex}`).style.display = 'flex';
+            
+            // Update button styles
+            const buttons = document.querySelectorAll('.arch-tab-btn');
+            buttons.forEach(btn => btn.style.background = '#95a5a6');
+            buttons[tabIndex].style.background = '#27ae60';
+        }
     </script>
 </body>
 </html>
