@@ -466,78 +466,78 @@
                     <!-- Tab Buttons -->
                     <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid #ecf0f1; margin-bottom: 2rem; flex-wrap: wrap;">
                         <button class="model-tab-btn" onclick="showModelTab(0)" style="padding: 1rem 1.5rem; border: none; background: #3498db; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
-                            📊 Overall Process
+                            📊 Quy Trình Tổng Thể
                         </button>
                         <button class="model-tab-btn" onclick="showModelTab(1)" style="padding: 1rem 1.5rem; border: none; background: #95a5a6; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
-                            📐 Depth Estimation
+                            📐 Ước Tính Độ Sâu
                         </button>
                     </div>
 
-                    <!-- Tab 1: Overall Process -->
-                    <div class="model-tab-content" id="model-tab-0" style="display: flex; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
-                        <!-- Image Column -->
-                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
-                            <img src="diffusionmodel.png" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Overall Process">
+                    <!-- Tab 1: Quy Trình Tổng Thể -->
+                    <div class="model-tab-content" id="model-tab-0" style="display: flex; flex-direction: column; gap: 2rem; align-items: center; padding: 2rem; background: white; border-radius: 12px; min-height: auto;">
+                        <!-- Image -->
+                        <div style="width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center;">
+                            <img src="diffusionmodel.png" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Quy Trình Tổng Thể">
                         </div>
-                        <!-- Text Column -->
-                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
-                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">End-to-End Pipeline</h3>
+                        <!-- Text -->
+                        <div style="width: 100%; max-width: 800px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem; text-align: center;">Quy Trình End-to-End</h3>
                             <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
-                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">📥 Step 1: Input Preparation</h4>
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">📥 Bước 1: Chuẩn Bị Input</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ Reference Object → AnyDoor Encoder → Feature embedding</li>
-                                    <li>✓ Scene Image → Depth Estimator → Depth map</li>
-                                    <li>✓ Scene Image → VAE Encoder → Latent representation</li>
+                                    <li>✓ Vật thể tham chiếu → AnyDoor Encoder → Embedding đặc trưng</li>
+                                    <li>✓ Ảnh cảnh → Depth Estimator → Bản đồ độ sâu</li>
+                                    <li>✓ Ảnh cảnh → VAE Encoder → Biểu diễn latent</li>
                                 </ul>
                             </div>
                             <div style="background: #f9f0ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #9b59b6; margin-bottom: 1rem;">
-                                <h4 style="color: #8e44ad; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Step 2: Iterative Denoising</h4>
+                                <h4 style="color: #8e44ad; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Bước 2: Khử Nhiễu Lặp</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ U-Net removes noise iteratively</li>
-                                    <li>✓ DeGLaD mask guides FG/BG separation</li>
-                                    <li>✓ Latent blending based on depth</li>
+                                    <li>✓ U-Net khử nhiễu dần theo lịch trình</li>
+                                    <li>✓ Mask DeGLaD hướng dẫn tách FG/BG</li>
+                                    <li>✓ Pha trộn latent dựa vào độ sâu</li>
                                 </ul>
                             </div>
                             <div style="background: #fff0f5; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #e91e63;">
-                                <h4 style="color: #c2185b; margin-bottom: 0.7rem; font-size: 1rem;">📤 Step 3: Final Image</h4>
+                                <h4 style="color: #c2185b; margin-bottom: 0.7rem; font-size: 1rem;">📤 Bước 3: Ảnh Cuối Cùng</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ Latent → VAE Decoder → Output (512×512)</li>
-                                    <li>✓ Follows prompt + preserves depth</li>
+                                    <li>✓ Latent → VAE Decoder → Ảnh đầu ra (512×512)</li>
+                                    <li>✓ Tuân theo prompt + bảo tồn độ sâu</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab 2: Depth Estimation -->
-                    <div class="model-tab-content" id="model-tab-1" style="display: none; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
-                        <!-- Image Column -->
-                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
-                            <img src="depth.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Depth Estimation">
+                    <!-- Tab 2: Ước Tính Độ Sâu -->
+                    <div class="model-tab-content" id="model-tab-1" style="display: none; flex-direction: column; gap: 2rem; align-items: center; padding: 2rem; background: white; border-radius: 12px; min-height: auto;">
+                        <!-- Image -->
+                        <div style="width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center;">
+                            <img src="depth.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Ước Tính Độ Sâu">
                         </div>
-                        <!-- Text Column -->
-                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
-                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">Depth Anything Module</h3>
+                        <!-- Text -->
+                        <div style="width: 100%; max-width: 800px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem; text-align: center;">Mô Đun Depth Anything</h3>
                             <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
-                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">📊 Model</h4>
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">📊 Mô Hình</h4>
                                 <p style="margin: 0; color: #333; font-size: 0.9rem;">
-                                    Zero-shot depth estimator trained on millions of unlabeled images. Generalizes well across diverse scenes.
+                                    Bộ ước tính độ sâu zero-shot được huấn luyện trên hàng triệu ảnh không có nhãn. Tổng quát hóa tốt trên các cảnh đa dạng.
                                 </p>
                             </div>
                             <div style="background: #f9f0ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #9b59b6; margin-bottom: 1rem;">
-                                <h4 style="color: #8e44ad; margin-bottom: 0.7rem; font-size: 1rem;">🔍 Pipeline</h4>
+                                <h4 style="color: #8e44ad; margin-bottom: 0.7rem; font-size: 1rem;">🔍 Quy Trình</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ <strong>Preprocessing:</strong> Resize → (518, 518)</li>
-                                    <li>✓ <strong>Encoder (DINOv2 ViT):</strong> Multi-level features</li>
-                                    <li>✓ <strong>Decoder (DPT):</strong> Progressive refinement</li>
-                                    <li>✓ <strong>Postprocessing:</strong> Output (H, W)</li>
+                                    <li>✓ <strong>Tiền xử lý:</strong> Thay đổi kích thước → (518, 518)</li>
+                                    <li>✓ <strong>Encoder (DINOv2 ViT):</strong> Đặc trưng đa cấp</li>
+                                    <li>✓ <strong>Decoder (DPT):</strong> Tinh chỉnh dần dần</li>
+                                    <li>✓ <strong>Hậu xử lý:</strong> Đầu ra (H, W)</li>
                                 </ul>
                             </div>
                             <div style="background: #fff0f5; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #e91e63;">
-                                <h4 style="color: #c2185b; margin-bottom: 0.7rem; font-size: 1rem;">💡 Benefits</h4>
+                                <h4 style="color: #c2185b; margin-bottom: 0.7rem; font-size: 1rem;">💡 Lợi Ích</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ 3D Understanding: object distance</li>
-                                    <li>✓ Occlusion Handling: visibility</li>
-                                    <li>✓ Perspective Preservation: realism</li>
+                                    <li>✓ Hiểu 3D: khoảng cách vật thể</li>
+                                    <li>✓ Xử lý Che Khuất: mức độ hiển thị</li>
+                                    <li>✓ Bảo Tồn Phối Cảnh: tính chân thực</li>
                                 </ul>
                             </div>
                         </div>
@@ -556,80 +556,80 @@
                     <!-- Tab Buttons -->
                     <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid #ecf0f1; margin-bottom: 2rem; flex-wrap: wrap;">
                         <button class="arch-tab-btn" onclick="showArchTab(0)" style="padding: 1rem 1.5rem; border: none; background: #27ae60; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
-                            🔵 DeGLaD
+                            🔵 Phân Tách Lớp
                         </button>
                         <button class="arch-tab-btn" onclick="showArchTab(1)" style="padding: 1rem 1.5rem; border: none; background: #95a5a6; color: white; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: background 0.3s; font-size: 0.95rem;">
-                            🟡 FeatGLaC
+                            🟡 Ghép Nối Đặc Trưng
                         </button>
                     </div>
 
-                    <!-- Tab 1: DeGLaD -->
-                    <div class="arch-tab-content" id="arch-tab-0" style="display: flex; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
-                        <!-- Image Column -->
-                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
-                            <img src="deglad.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="DeGLaD">
+                    <!-- Tab 1: Phân Tách Lớp -->
+                    <div class="arch-tab-content" id="arch-tab-0" style="display: flex; flex-direction: column; gap: 2rem; align-items: center; padding: 2rem; background: white; border-radius: 12px; min-height: auto;">
+                        <!-- Image -->
+                        <div style="width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center;">
+                            <img src="deglad.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Phân Tách Lớp">
                         </div>
-                        <!-- Text Column -->
-                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
-                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">DeGLaD: Layer Decomposition</h3>
+                        <!-- Text -->
+                        <div style="width: 100%; max-width: 800px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem; text-align: center;">Phân Tách Lớp Theo Độ Sâu</h3>
                             <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
-                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">🎯 Purpose</h4>
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">🎯 Mục Đích</h4>
                                 <p style="margin: 0; color: #333; font-size: 0.9rem;">
-                                    Use depth map to separate image into Foreground (near objects) and Background (distant areas).
+                                    Sử dụng bản đồ độ sâu để tách ảnh thành Cảnh Trước (vật thể gần) và Cảnh Sau (vùng xa).
                                 </p>
                             </div>
 
                             <div style="background: #fff9e6; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #f39c12; margin-bottom: 1rem;">
-                                <h4 style="color: #d68910; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Process</h4>
+                                <h4 style="color: #d68910; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Quy Trình</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ <strong>Threshold:</strong> Compare Z(x,y) with depth threshold d</li>
-                                    <li>✓ <strong>Morphological:</strong> Erosion/dilation for cleanup</li>
-                                    <li>✓ <strong>Output:</strong> M_fg, M_bg masks</li>
+                                    <li>✓ <strong>Ngưỡng:</strong> So sánh Z(x,y) với ngưỡng độ sâu d</li>
+                                    <li>✓ <strong>Hình Thái Học:</strong> Xói mòn/giãn nở để làm sạch</li>
+                                    <li>✓ <strong>Đầu Ra:</strong> Masks M_fg, M_bg</li>
                                 </ul>
                             </div>
 
                             <div style="background: #e8f5e9; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #27ae60;">
-                                <h4 style="color: #1b5e20; margin-bottom: 0.7rem; font-size: 1rem;">✨ Applications</h4>
+                                <h4 style="color: #1b5e20; margin-bottom: 0.7rem; font-size: 1rem;">✨ Ứng Dụng</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ Add new object: regenerate FG only</li>
-                                    <li>✓ Change background: regenerate BG only</li>
-                                    <li>✓ Maintains 3D consistency</li>
+                                    <li>✓ Thêm vật thể mới: tạo lại FG chỉ</li>
+                                    <li>✓ Thay đổi nền: tạo lại BG chỉ</li>
+                                    <li>✓ Duy trì tính nhất quán 3D</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab 2: FeatGLaC -->
-                    <div class="arch-tab-content" id="arch-tab-1" style="display: none; gap: 2rem; align-items: flex-start; padding: 2rem; background: white; border-radius: 12px; min-height: 45vh;">
-                        <!-- Image Column -->
-                        <div style="flex: 1; min-width: 300px; display: flex; justify-content: center; align-items: center;">
-                            <img src="featglac.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="FeatGLaC">
+                    <!-- Tab 2: Ghép Nối Đặc Trưng -->
+                    <div class="arch-tab-content" id="arch-tab-1" style="display: none; flex-direction: column; gap: 2rem; align-items: center; padding: 2rem; background: white; border-radius: 12px; min-height: auto;">
+                        <!-- Image -->
+                        <div style="width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center;">
+                            <img src="featglac.jpg" class="clickable-img" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="Ghép Nối Đặc Trưng">
                         </div>
-                        <!-- Text Column -->
-                        <div style="flex: 1; min-width: 300px; line-height: 1.8;">
-                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem;">FeatGLaC: Feature Compositing</h3>
+                        <!-- Text -->
+                        <div style="width: 100%; max-width: 800px; line-height: 1.8;">
+                            <h3 style="color: #2c3e50; margin-top: 0; font-size: 1.3rem; margin-bottom: 1.5rem; text-align: center;">Ghép Nối Theo Đặc Trưng</h3>
                             <div style="background: #f0f9ff; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #3498db; margin-bottom: 1rem;">
-                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">🎯 Purpose</h4>
+                                <h4 style="color: #2980b9; margin-bottom: 0.7rem; font-size: 1rem;">🎯 Mục Đích</h4>
                                 <p style="margin: 0; color: #333; font-size: 0.9rem;">
-                                    Extract features (textures, colors) from FG/BG to guide image generation with consistent style.
+                                    Trích xuất đặc trưng (kết cấu, màu sắc) từ FG/BG để hướng dẫn tạo ảnh với phong cách nhất quán.
                                 </p>
                             </div>
 
                             <div style="background: #fff9e6; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #f39c12; margin-bottom: 1rem;">
-                                <h4 style="color: #d68910; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Parallel Branches</h4>
+                                <h4 style="color: #d68910; margin-bottom: 0.7rem; font-size: 1rem;">⚙️ Hai Nhánh Song Song</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ <strong>Guidance:</strong> VAE encodes FG/BG → K, V embeddings</li>
-                                    <li>✓ <strong>Generation:</strong> U-Net denoises from noise (30-50 steps)</li>
-                                    <li>✓ <strong>Cross-Attention:</strong> Injects reference features</li>
+                                    <li>✓ <strong>Hướng Dẫn:</strong> VAE mã hóa FG/BG → Embeddings K, V</li>
+                                    <li>✓ <strong>Tạo Ra:</strong> U-Net khử nhiễu từ noise (30-50 bước)</li>
+                                    <li>✓ <strong>Chú Ý Chéo:</strong> Tiêm đặc trưng tham chiếu</li>
                                 </ul>
                             </div>
 
                             <div style="background: #e8f5e9; padding: 1.2rem; border-radius: 8px; border-left: 5px solid #27ae60;">
-                                <h4 style="color: #1b5e20; margin-bottom: 0.7rem; font-size: 1rem;">✨ Benefits</h4>
+                                <h4 style="color: #1b5e20; margin-bottom: 0.7rem; font-size: 1rem;">✨ Lợi Ích</h4>
                                 <ul style="margin: 0; padding-left: 1.5rem; list-style: none; font-size: 0.9rem;">
-                                    <li>✓ Texture Consistency: reuses original patterns</li>
-                                    <li>✓ Color Harmony: matches ambient colors</li>
-                                    <li>✓ Lighting Match: respects illumination</li>
+                                    <li>✓ Nhất Quán Kết Cấu: tái sử dụng mẫu gốc</li>
+                                    <li>✓ Hài Hòa Màu Sắc: khớp màu môi trường</li>
+                                    <li>✓ Khớp Ánh Sáng: tôn trọng chiếu sáng</li>
                                 </ul>
                             </div>
                         </div>
